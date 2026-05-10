@@ -1319,27 +1319,43 @@ function budgetImportComposition(code,bank){
  if(!c)return null;
  return state.compositions.find(x=>String(x.code||'').trim()===c&&(String(x.source||'').toUpperCase()===b||!b||b==='BANCO'||b==='BASE'||b==='PRÓPRIO'||b==='PROPRIO'))||state.compositions.find(x=>String(x.code||'').trim()===c)||null;
 }
-function budgetImportHeaderMap(row){
- const keys=row.map(norm),has=k=>keys.some(x=>x.includes(k));
- if(!(has('descricao')&&(has('codigo')||has('item'))))return null;
- const find=(arr)=>keys.findIndex(k=>arr.some(a=>k.includes(a)));
- const costIdx=keys.findIndex(k=>(k.includes('valor_unit')||k.includes('unitario')||k.includes('vl_unit')||k.includes('preco_unit'))&&!k.includes('bdi'));
- return {
-   item:find(['item']),
-   code:find(['codigo','cod']),
-   bank:find(['banco','base','fonte']),
-   desc:find(['descricao','servico']),
-   unit:find(['und','unidade']),
-   qty:find(['quant','qtd']),
-   cost:costIdx,
-   costBdi:find(['valor_com_bdi','unit_com_bdi','com_bdi']),
-   total:find(['total'])
- };
+function budgetHeaderLabel(rows,r,c){
+ return [rows[r-1]?.[c],rows[r]?.[c],rows[r+1]?.[c]].map(x=>String(x??'').trim()).filter(Boolean).join(' ');
+}
+function budgetHeaderScore(label,field){
+ const k=norm(label);
+ if(!k)return 0;
+ const has=s=>k.includes(s), exact=arr=>arr.includes(k);
+ if(field==='item')return exact(['item','item_n'])||/^item(_|$)/.test(k)?8:0;
+ if(field==='code')return exact(['codigo','cod','codigo_composicao'])||/(^|_)cod(igo)?(_|$)/.test(k)?8:0;
+ if(field==='bank')return exact(['banco','base','fonte'])||has('banco')||has('base')||has('fonte')?8:0;
+ if(field==='desc')return has('descricao')||has('descrição')||has('servico')||has('serviço')?10:0;
+ if(field==='unit')return exact(['und','un','unid','unidade'])||/(^|_)(und|unid|unidade|un)($|_)/.test(k)?9:0;
+ if(field==='qty')return exact(['quant','quant_','quantidade','qtd','qtde'])||/(^|_)(quant|quantidade|qtd|qtde)($|_)/.test(k)?10:0;
+ if(field==='costBdi')return (has('bdi')&&(has('valor')||has('vl')||has('preco')||has('preco_unit')||has('custo')))||has('com_bdi')?10:0;
+ if(field==='cost')return !has('bdi')&&!has('total')&&((has('valor')&&(has('unit')||has('unitario'))) || (has('vl')&&has('unit')) || has('preco_unit') || has('custo_unit'))?10:0;
+ if(field==='total')return exact(['total','valor_total','custo_total'])||/(^|_)total($|_)/.test(k)?9:0;
+ return 0;
+}
+function budgetImportHeaderMap(rows,rowIndex){
+ const maxCols=Math.max(...rows.slice(Math.max(0,rowIndex-1),rowIndex+2).map(r=>(r||[]).length),0);
+ const labels=Array.from({length:maxCols},(_,c)=>budgetHeaderLabel(rows,rowIndex,c));
+ const fields=['item','code','bank','desc','unit','qty','costBdi','cost','total'],used=new Set(),map={};
+ fields.forEach(field=>{
+   let best={i:-1,score:0};
+   labels.forEach((label,i)=>{if(used.has(i))return;const score=budgetHeaderScore(label,field);if(score>best.score)best={i,score}});
+   map[field]=best.score?best.i:-1;
+   if(best.score)used.add(best.i);
+ });
+ const hasMain=map.desc>=0&&(map.code>=0||map.item>=0);
+ const hasNumbers=map.qty>=0&&(map.cost>=0||map.costBdi>=0||map.total>=0);
+ return hasMain&&hasNumbers?map:null;
 }
 function budgetImportCell(row,i){return i>=0?String(row[i]??'').trim():''}
 function budgetImportItemFromCells(row,map,currentGroup,bdi){
  const desc=budgetImportCell(row,map.desc),code=budgetImportCell(row,map.code),bank=budgetImportCell(row,map.bank),unit=budgetImportCell(row,map.unit);
  const itemRef=budgetImportCell(row,map.item),qty=n(budgetImportCell(row,map.qty)),costRaw=n(budgetImportCell(row,map.cost)),costBdi=n(budgetImportCell(row,map.costBdi)),total=n(budgetImportCell(row,map.total));
+ if(map.qty===map.cost||map.qty===map.costBdi||map.qty===map.total)throw new Error('Não foi possível separar corretamente as colunas Quantidade, Valor Unitário e Total. Confira o cabeçalho da planilha.');
  if(desc&&!code&&!unit&&(!qty||String(itemRef).match(/^\d+$/)))return {group:desc};
  if(!desc||(!code&&!qty&&!total))return null;
  let cost=costRaw||((costBdi&&bdi>-99)?costBdi/(1+bdi/100):0)||((total&&qty)?total/qty/(1+bdi/100):0);
@@ -1367,7 +1383,7 @@ function budgetImportItemFromLine(line,currentGroup,bdi){
 }
 function budgetFromImportedRows(rows,fileName){
  const bdi=state.settings.bdi||25,items=[];let group='Sem grupo',map=null,start=0;
- for(let i=0;i<Math.min(rows.length,40);i++){map=budgetImportHeaderMap(rows[i]||[]);if(map){start=i+1;break}}
+ for(let i=0;i<Math.min(rows.length,40);i++){map=budgetImportHeaderMap(rows,i);if(map){start=i+1;break}}
  if(!map){map={item:0,code:1,bank:2,desc:3,unit:4,qty:5,cost:6,costBdi:7,total:8};start=0}
  rows.slice(start).forEach(row=>{
    if(!row||!row.some(c=>String(c??'').trim()))return;
