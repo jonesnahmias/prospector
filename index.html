@@ -1,0 +1,1606 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>App de Composições de Custo | Obras</title>
+  <style>
+    :root{
+      --bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#64748b;--line:#dbe3ef;
+      --primary:#0f766e;--primary2:#115e59;--blue:#1d4ed8;--danger:#dc2626;
+      --soft:#eef6ff;--shadow:0 14px 38px rgba(15,23,42,.10);--r:18px;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(135deg,#ecfeff,#f8fafc 45%,#eef2ff);color:var(--text)}
+    .app{display:grid;grid-template-columns:280px 1fr;min-height:100vh}
+    aside{background:#0f172a;color:#fff;padding:22px 16px;position:sticky;top:0;height:100vh;overflow:auto}
+    .logo{display:flex;gap:12px;align-items:center;margin-bottom:22px}
+    .logo-b{width:44px;height:44px;border-radius:14px;background:linear-gradient(135deg,#14b8a6,#2563eb);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px}
+    h1{font-size:17px;margin:0;line-height:1.2}.logo p{margin:3px 0 0;color:#cbd5e1;font-size:12px}
+    .nav-title{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin:18px 8px 7px;font-weight:800}
+    .nav{border:0;background:transparent;color:#e2e8f0;width:100%;text-align:left;padding:12px;border-radius:12px;cursor:pointer;font-size:14px;text-decoration:none;display:block}
+    .nav:hover,.nav.active{background:rgba(255,255,255,.1);color:#fff}
+    .side-card{margin-top:20px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px;font-size:12px;line-height:1.5;color:#cbd5e1}
+    main{padding:28px;overflow:hidden}.top{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:20px}
+    h2{font-size:28px;margin:0}.sub{color:var(--muted);font-size:14px;margin:6px 0 0}
+    .pill{background:#ccfbf1;color:#115e59;border-radius:999px;padding:8px 12px;font-weight:800;font-size:12px;white-space:nowrap}
+    .section{display:none}.section.active{display:block}
+    .grid{display:grid;gap:18px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}
+    .card{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:20px;margin-bottom:18px}
+    .card h3{margin:0 0 12px;font-size:18px}.card p{margin:0;color:var(--muted);line-height:1.5;font-size:14px}
+    .stat{display:flex;justify-content:space-between;align-items:flex-start}.stat .num{font-size:30px;font-weight:900;margin-top:8px}.ico{font-size:24px;background:#e0f2fe;color:#0369a1;border-radius:16px;width:44px;height:44px;display:flex;align-items:center;justify-content:center}
+    .form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.span2{grid-column:span 2}.span3{grid-column:span 3}.span4{grid-column:span 4}
+    label{display:block;font-size:12px;font-weight:800;margin-bottom:6px;color:#334155}
+    input,select,textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:#fff;color:var(--text);font-size:14px;outline:none}
+    textarea{min-height:86px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(20,184,166,.15)}
+    .btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}.btn{border:0;border-radius:12px;padding:11px 14px;font-weight:800;cursor:pointer;font-size:13px}
+    .pri{background:var(--primary);color:#fff}.pri:hover{background:var(--primary2)}.blue{background:var(--blue);color:#fff}.soft{background:#e2e8f0;color:#0f172a}.danger{background:#fee2e2;color:var(--danger)}.ok{background:#dcfce7;color:#166534}.warn{background:#fef3c7;color:#92400e}
+    .notice{padding:14px;border-radius:14px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-size:13px;line-height:1.5;margin-bottom:14px}.notice.warn{background:#fffbeb;border-color:#fde68a;color:#92400e}
+    .logo-preview{display:flex;align-items:center;min-height:72px;padding:12px;border:1px dashed var(--line);border-radius:14px;background:#f8fafc;color:var(--muted);font-size:13px}
+    .logo-preview img{display:block;max-width:220px;max-height:64px;object-fit:contain}
+    .toolbar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}.tool{display:flex;gap:10px;flex-wrap:wrap}.search{min-width:280px}
+    .table{overflow:auto;border:1px solid var(--line);border-radius:16px;background:#fff}table{width:100%;border-collapse:collapse;font-size:13px;min-width:980px}
+    .action-cell{white-space:nowrap;min-width:258px}.action-stack{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}.action-stack .btn{padding:9px 12px;border-radius:10px;white-space:nowrap;line-height:1}
+    .suggest-wrap{position:relative}.suggest-list{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:80;max-height:260px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}.suggest-list.active{display:block}.suggest-item{padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;font-size:12px;line-height:1.35}.suggest-item:hover{background:var(--soft)}.suggest-item b{display:block;font-size:13px}.suggest-item span{color:var(--muted)}
+    .sheet-table{overflow:visible}.sheet-table table{font-size:12px;min-width:0;table-layout:fixed}.sheet-table th,.sheet-table td{padding:7px 6px}.sheet-table input{width:100%;min-width:0;border:0;border-radius:6px;background:transparent;padding:6px;color:inherit;font-size:12px;box-shadow:none}.sheet-table input:focus{background:rgba(255,255,255,.85);color:#0f172a;box-shadow:0 0 0 2px rgba(20,184,166,.24)}.sheet-table .mini{text-align:right}.sheet-table .unit{text-align:center}.sheet-table .desc{min-width:0}.code-link{width:100%;border:0;border-radius:6px;background:rgba(15,23,42,.08);color:#0b5ed7;font-weight:900;cursor:pointer;padding:6px;text-align:center;font-size:12px}.code-link:hover{text-decoration:underline;background:rgba(29,78,216,.14)}.sheet-table th:nth-child(1),.sheet-table td:nth-child(1){width:5%}.sheet-table th:nth-child(2),.sheet-table td:nth-child(2){width:9%}.sheet-table th:nth-child(3),.sheet-table td:nth-child(3){width:7%}.sheet-table th:nth-child(4),.sheet-table td:nth-child(4){width:35%}.sheet-table th:nth-child(5),.sheet-table td:nth-child(5){width:5%}.sheet-table th:nth-child(6),.sheet-table td:nth-child(6){width:7%}.sheet-table th:nth-child(7),.sheet-table td:nth-child(7){width:8%}.sheet-table th:nth-child(8),.sheet-table td:nth-child(8){width:8%}.sheet-table th:nth-child(9),.sheet-table td:nth-child(9){width:8%}.sheet-table th:nth-child(10),.sheet-table td:nth-child(10){width:8%}.sheet-group td{background:#bdd7ee;color:#0f172a;font-weight:900}.sheet-item td{background:#e2f0d9;color:#0f172a}.sheet-total td{background:#d9eaf7;color:#0f172a;font-weight:900}.row-tools{display:flex;gap:4px;white-space:nowrap}.icon-btn{border:0;border-radius:8px;background:#e2e8f0;color:#0f172a;cursor:pointer;font-weight:900;padding:7px 8px;line-height:1;font-size:12px}
+    .budget-view{overflow:auto;border:1px solid var(--line);border-radius:16px;background:#fff;padding:12px}.budget-view h2{font-size:20px;margin:0 0 6px}.budget-view .section{display:block;margin:0}.budget-model{width:100%;min-width:980px;border-collapse:collapse;font-size:12px}.budget-model th{background:#6f6f6f;color:#fff;border:1px solid #bfbfbf;padding:8px;text-align:center}.budget-model td{border:1px solid #cbd5e1;padding:8px;vertical-align:top}.budget-group td{background:#bdd7ee;color:#0f172a;font-weight:900}.budget-item td{background:#e2f0d9;color:#0f172a}.budget-total td{background:#d9eaf7;color:#0f172a;font-weight:900}
+    th,td{border-bottom:1px solid #edf2f7;padding:10px;text-align:left;vertical-align:top}th{background:#f8fafc;text-transform:uppercase;font-size:11px;letter-spacing:.04em;color:#334155}
+    .right{text-align:right}.center{text-align:center}.strong{font-weight:900}.muted{color:var(--muted)}.small{font-size:12px}.empty{padding:28px;text-align:center;color:var(--muted);background:#f8fafc;border:1px dashed #cbd5e1;border-radius:16px}
+    .badge{display:inline-block;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;background:#e2e8f0}.sc{background:#dcfce7;color:#166534}.src{background:#dbeafe;color:#1e40af}.prop{background:#fef3c7;color:#92400e}
+    .modal-bg{position:fixed;inset:0;background:rgba(15,23,42,.58);display:none;align-items:center;justify-content:center;z-index:50;padding:18px}.modal-bg.active{display:flex}
+    .modal{width:min(1100px,96vw);max-height:92vh;overflow:auto;background:#fff;border-radius:22px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.25)}
+    #budgetModal.modal-bg{left:280px;width:calc(100vw - 280px);padding:12px;align-items:stretch;justify-content:stretch;background:rgba(15,23,42,.34)}#budgetModal .modal{position:relative;width:100%;height:calc(100vh - 24px);max-height:none;padding:14px 18px;border-radius:18px}#budgetModal .modal-head{position:absolute;right:12px;top:12px;margin:0;z-index:3}#budgetModal .modal-head>div{display:none}#budgetModal .close{width:34px;height:34px}#budgetModal .form{gap:7px 10px}#budgetModal .form:first-of-type{padding:2px 48px 8px 0;border-bottom:1px solid var(--line);align-items:end}#budgetModal .form:first-of-type div{display:flex;align-items:baseline;gap:6px;min-width:0}#budgetModal .form:first-of-type label{margin:0;white-space:nowrap;color:var(--muted);font-size:11px}#budgetModal .form:first-of-type input{border:0;background:transparent;padding:0;border-radius:0;font-weight:800;color:var(--text);min-width:0}#budgetModal .form:first-of-type input:focus{box-shadow:none;background:var(--soft);border-radius:6px;padding:2px 4px}#budgetModal label{font-size:11px;margin-bottom:3px}#budgetModal input,#budgetModal select{padding:8px 11px;border-radius:10px;font-size:13px}#budgetModal h3{margin:10px 0 8px;font-size:18px}#budgetModal .table{margin-top:8px!important}#budgetModal .summary{gap:10px;margin-top:10px}#budgetModal .box{padding:11px 13px;border-radius:14px}#budgetModal .box .v{font-size:20px}#budgetModal .btns{margin-top:10px}
+    #compModal.nested-comp{inset:12px 12px 12px auto;width:min(820px,48vw);height:calc(100vh - 24px);padding:0;background:transparent;align-items:stretch;justify-content:flex-end;pointer-events:none;z-index:80}#compModal.nested-comp .modal{width:100%;height:100%;max-height:none;border-radius:18px;pointer-events:auto}#compModal.nested-comp .form{grid-template-columns:repeat(2,1fr);gap:9px}#compModal.nested-comp .span2,#compModal.nested-comp .span3,#compModal.nested-comp .span4{grid-column:span 2}.comp-items-table table{min-width:0;table-layout:fixed}.comp-items-table th,.comp-items-table td{padding:7px 6px}.comp-items-table input{width:100%;min-width:0;border:0;border-radius:6px;background:transparent;color:inherit;padding:6px;font-size:12px}.comp-items-table input:focus{background:var(--soft);box-shadow:0 0 0 2px rgba(20,184,166,.24)}.comp-items-table .num{text-align:right}.comp-items-table th:nth-child(1),.comp-items-table td:nth-child(1){width:32%}.comp-items-table th:nth-child(2),.comp-items-table td:nth-child(2){width:16%}.comp-items-table th:nth-child(3),.comp-items-table td:nth-child(3){width:7%}.comp-items-table th:nth-child(4),.comp-items-table td:nth-child(4){width:10%}.comp-items-table th:nth-child(5),.comp-items-table td:nth-child(5){width:11%}.comp-items-table th:nth-child(6),.comp-items-table td:nth-child(6){width:8%}.comp-items-table th:nth-child(7),.comp-items-table td:nth-child(7){width:10%}.comp-items-table th:nth-child(8),.comp-items-table td:nth-child(8){width:6%}
+    .modal-head{display:flex;justify-content:space-between;gap:12px;margin-bottom:16px}.close{border:0;background:#f1f5f9;border-radius:12px;width:38px;height:38px;font-size:20px;cursor:pointer}
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}.box{background:#f8fafc;border:1px solid var(--line);border-radius:16px;padding:14px}.box .v{font-weight:900;font-size:20px;margin-top:6px}.autosave-status{align-self:center;color:var(--muted);font-size:12px;font-weight:800}
+    
+    .import-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:18px}
+    .import-option{border:2px solid var(--line);border-radius:18px;padding:18px;background:#fff;cursor:pointer;transition:.2s ease}
+    .import-option:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+    .import-option.active{border-color:var(--primary);background:#f0fdfa}
+    .import-option h3{margin:0 0 8px;font-size:18px}
+    .import-option p{margin:0;color:var(--muted);font-size:13px;line-height:1.45}
+    .import-option .tag{display:inline-block;margin-top:12px;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:900;background:#e2e8f0;color:#334155}
+    .import-option.active .tag{background:#ccfbf1;color:#115e59}
+    .official-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:14px}
+    .official-card{border:1px solid var(--line);border-radius:16px;padding:14px;background:#f8fafc}
+    .official-card h4{margin:0 0 6px;font-size:15px}
+    .official-card p{margin:0 0 12px;color:var(--muted);font-size:12px;line-height:1.4}
+    @media(max-width:900px){.import-options,.official-grid{grid-template-columns:1fr}}
+
+    
+    .analytic-paste{width:100%;min-height:170px;font-family:Consolas,monospace;font-size:13px}
+    .analytic-help{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:14px}
+    .analytic-help .box{background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:12px}
+    .analytic-help b{display:block;margin-bottom:5px}
+    @media(max-width:900px){.analytic-help{grid-template-columns:1fr}}
+
+    .top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+    .theme-toggle{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--text);box-shadow:0 8px 20px rgba(15,23,42,.08)}
+    .theme-toggle:hover{border-color:var(--primary);box-shadow:0 0 0 3px rgba(20,184,166,.12)}
+    body.dark{--bg:#0b1120;--card:#111827;--text:#e5edf8;--muted:#9caec5;--line:#263449;--primary:#2dd4bf;--primary2:#14b8a6;--blue:#60a5fa;--danger:#f87171;--soft:#142235;--shadow:0 18px 42px rgba(0,0,0,.34);background:linear-gradient(135deg,#07111f,#111827 48%,#0f172a)}
+    body.dark aside{background:#050b16;border-right:1px solid #1f2937}
+    body.dark .logo-b{background:linear-gradient(135deg,#0f766e,#2563eb)}
+    body.dark .pill{background:#143f3b;color:#99f6e4;border:1px solid #1f6f67}
+    body.dark .card,body.dark .modal,body.dark .import-option{background:rgba(17,24,39,.96);border-color:var(--line)}
+    body.dark input,body.dark select,body.dark textarea{background:#0b1220;color:var(--text);border-color:var(--line)}
+    body.dark label,body.dark th{color:#cbd5e1}
+    body.dark .table{background:#101827;border-color:var(--line)}
+    body.dark .sheet-table input:focus{background:#111827;color:#e5edf8}body.dark .code-link{background:#0b1220;color:#93c5fd}body.dark .code-link:hover{background:#142b4a}body.dark .sheet-group td{background:#21466f;color:#e5edf8}body.dark .sheet-item td{background:#173522;color:#e5edf8}body.dark .sheet-total td{background:#17324d;color:#e5edf8}body.dark .icon-btn{background:#223149;color:#e5edf8}
+    body.dark .budget-view{background:#0f172a;border-color:var(--line)}body.dark .budget-model th{background:#273449;color:#e5edf8;border-color:#46556b}body.dark .budget-model td{border-color:#314054}body.dark .budget-group td{background:#21466f;color:#e5edf8}body.dark .budget-item td{background:#173522;color:#e5edf8}body.dark .budget-total td{background:#17324d;color:#e5edf8}
+    body.dark th{background:#162033}body.dark td{border-bottom-color:#253247}
+    body.dark .box,body.dark .official-card,body.dark .analytic-help .box,body.dark .empty{background:#0f172a;border-color:var(--line)}
+    body.dark .logo-preview{background:#0f172a;border-color:var(--line)}
+    body.dark .notice{background:#10233d;border-color:#1e40af;color:#bfdbfe}body.dark .notice.warn{background:#3a2b0f;border-color:#92400e;color:#fde68a}
+    body.dark .soft{background:#223149;color:#e5edf8}body.dark .danger{background:#3b1518;color:#fecaca}body.dark .ok{background:#12351f;color:#bbf7d0}body.dark .warn{background:#3a2b0f;color:#fde68a}
+    body.dark .ico{background:#12304d;color:#bae6fd}body.dark .badge{background:#243247;color:#e2e8f0}body.dark .sc{background:#12351f;color:#bbf7d0}body.dark .src{background:#142b4a;color:#bfdbfe}body.dark .prop{background:#3a2b0f;color:#fde68a}
+    body.dark .modal-bg{background:rgba(0,0,0,.72)}body.dark .close{background:#1f2937;color:#e5edf8}
+    body.dark .import-option.active{background:#0d2f2c;border-color:var(--primary)}body.dark .import-option .tag{background:#243247;color:#cbd5e1}body.dark .import-option.active .tag{background:#134e4a;color:#99f6e4}
+    @media(max-width:1050px){.app{grid-template-columns:1fr}aside{position:relative;height:auto}.g4,.g3{grid-template-columns:repeat(2,1fr)}.form{grid-template-columns:repeat(2,1fr)}.span3,.span4{grid-column:span 2}.summary{grid-template-columns:repeat(2,1fr)}#budgetModal.modal-bg{left:0;width:100vw}#compModal.nested-comp{inset:12px;width:auto}}
+    @media(max-width:720px){main{padding:18px}.top{flex-direction:column}.g4,.g3,.g2,.form,.summary{grid-template-columns:1fr}.span2,.span3,.span4{grid-column:span 1}.search{min-width:100%}.btn{width:100%}.action-stack .btn{width:auto}.action-cell{min-width:258px}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="logo"><div class="logo-b">C</div><div><h1>Composições de Custo</h1><p>Orçamentos de Obras</p></div></div>
+    <div class="nav-title">Principal</div>
+    <button class="nav active" data-s="home">🏠 Página inicial</button>
+    <button class="nav" data-s="orcamentos">💰 Orçamentos</button>
+    <button class="nav" data-s="composicoes">🧱 Composições</button>
+    <button class="nav" data-s="insumos">🧰 Insumos</button>
+    <div class="nav-title">Sistema</div>
+    <button class="nav" data-s="bibliotecas">📚 Bases cadastradas</button>
+    <button class="nav" data-s="importar">📥 Importar base</button>
+    <button class="nav" data-s="config">⚙️ Configurações</button>
+    <button class="nav" data-s="backup">💾 Backup</button>
+    <div class="nav-title">Atalhos</div>
+    <button class="nav" type="button" onclick="toggleTheme()" id="sideThemeToggle">🌙 Modo noturno</button>
+    <a class="nav side-link" href="https://www.pdf2go.com/pt" target="_blank" rel="noopener">📄 PDF para Excel</a>
+    <a class="nav side-link" href="https://prospector-adm.netlify.app/" target="_blank" rel="noopener">🧭 Prospector</a>
+    <div class="side-card"><b>UF padrão:</b> SC / Santa Catarina<br><b>Base ativa:</b> SINAPI<br><b>Uso principal:</b> orçamentos e composições.</div>
+  </aside>
+  <main>
+    <div class="top">
+      <div><h2 id="title">Página inicial</h2><p class="sub" id="subtitle">Ambiente de orçamento com composições, insumos e relatórios.</p></div>
+      <div class="top-actions"><button class="btn theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Alternar modo claro/noturno">🌙 Modo noturno</button><div class="pill" id="activeLib">📚 Biblioteca ativa: nenhuma</div></div>
+    </div>
+
+    <section id="home" class="section active">
+      <div class="grid g4">
+        <div class="card stat"><div><p>Bibliotecas</p><div class="num" id="stLib">0</div></div><div class="ico">📚</div></div>
+        <div class="card stat"><div><p>Composições</p><div class="num" id="stComp">0</div></div><div class="ico">🧱</div></div>
+        <div class="card stat"><div><p>Insumos</p><div class="num" id="stIns">0</div></div><div class="ico">🧰</div></div>
+        <div class="card stat"><div><p>Orçamentos</p><div class="num" id="stOrc">0</div></div><div class="ico">💰</div></div>
+      </div>
+      <div class="grid g3">
+        <div class="card"><h3>💰 Novo orçamento</h3><p>Monte o orçamento da obra com quantidades, BDI e totais.</p><div class="btns"><button class="btn pri" onclick="openBudget()">Criar orçamento</button></div></div>
+        <div class="card"><h3>🧱 Composições</h3><p>Consulte, edite ou duplique composições da base ativa.</p><div class="btns"><button class="btn pri" onclick="go('composicoes')">Ver composições</button><button class="btn soft" onclick="openComp()">Nova composição</button></div></div>
+        <div class="card"><h3>🏢 Empresa</h3><p>Cadastre dados e logotipo que aparecem nas impressões.</p><div class="btns"><button class="btn pri" onclick="go('config')">Dados da empresa</button></div></div>
+      </div>
+      <div class="card"><h3>Atalhos</h3><div class="btns"><button class="btn blue" onclick="go('orcamentos')">Abrir orçamentos</button><button class="btn soft" onclick="go('insumos')">Consultar insumos</button><button class="btn soft" onclick="go('backup')">Exportar backup</button></div></div>
+      <div class="card"><h3>Orçamentos recentes</h3><div id="homeRecent"></div></div>
+    </section>
+
+    <section id="importar" class="section">
+      <div class="card">
+        <h3>Importar bases</h3>
+        <div class="notice">
+          Escolha uma das duas formas de entrada. A <b>Opção A</b> já funciona totalmente nesta versão. A <b>Opção B</b> deixa o app preparado para buscar bases oficiais diretamente, mas o download automático real depende de uma função no Netlify.
+        </div>
+
+        <div class="import-options">
+          <div class="import-option active" id="optionUpload" onclick="setImportMode('upload')">
+            <h3>Opção A — Tenho o arquivo no computador</h3>
+            <p>Baixe a base oficial no site da fonte, salve como CSV e faça upload no app. É a opção mais estável para HTML puro no Netlify.</p>
+            <span class="tag">Disponível agora</span>
+          </div>
+          <div class="import-option" id="optionOfficial" onclick="setImportMode('official')">
+            <h3>Opção B — Baixar base oficial pelo app</h3>
+            <p>Escolha SINAPI/SC, SICRO ou outra fonte e deixe o app preparado para buscar a base oficial automaticamente.</p>
+            <span class="tag">Preparado para Netlify Function</span>
+          </div>
+          <div class="import-option" id="optionAnalytic" onclick="setImportMode('analytic')">
+            <h3>Opção C — Importar Analítico Individual</h3>
+            <p>Cole o bloco copiado da aba “Analítico com Custo” do Excel e o app transforma em composição analítica.</p>
+            <span class="tag">Novo</span>
+          </div>
+        </div>
+
+        <h3>Sites oficiais das bases</h3>
+        <div class="official-grid">
+          <div class="official-card"><h4>SINAPI / CAIXA</h4><p>Relatórios mensais de insumos, composições sintéticas e analíticas.</p><a class="btn soft" target="_blank" rel="noopener" href="https://www.caixa.gov.br/poder-publico/modernizacao-gestao/sinapi/Paginas/default.aspx">Abrir SINAPI</a></div>
+          <div class="official-card"><h4>Sumário SINAPI</h4><p>Atalho organizado para publicações, UFs, relatórios e documentos do SINAPI.</p><a class="btn soft" target="_blank" rel="noopener" href="https://cesarep.github.io/sumario-sinapi/">Abrir sumário</a></div>
+          <div class="official-card"><h4>SICRO / DNIT</h4><p>Custos referenciais para infraestrutura de transportes e obras rodoviárias.</p><a class="btn soft" target="_blank" rel="noopener" href="https://www.gov.br/dnit/pt-br/assuntos/planejamento-e-pesquisa/custos-referenciais/sistemas-de-custos/sicro">Abrir SICRO</a></div>
+          <div class="official-card"><h4>ORSE / CEHOP</h4><p>Orçamento de Obras de Sergipe, com bases e atualizações oficiais.</p><a class="btn soft" target="_blank" rel="noopener" href="https://orse.cehop.se.gov.br/">Abrir ORSE</a></div>
+          <div class="official-card"><h4>SEINFRA Ceará</h4><p>Portal oficial da Secretaria da Infraestrutura do Ceará.</p><a class="btn soft" target="_blank" rel="noopener" href="https://www.seinfra.ce.gov.br/">Abrir SEINFRA</a></div>
+          <div class="official-card"><h4>SBC</h4><p>Informativo SBC, base de composições e insumos por assinatura.</p><a class="btn soft" target="_blank" rel="noopener" href="https://www.informativosbc.com.br/">Abrir SBC</a></div>
+        </div>
+
+        <div id="uploadPanel">
+          <h3>Opção A — Upload manual de CSV ou XLSX</h3>
+          <div class="notice warn">Importe CSV, TXT, XLS ou XLSX. Para arquivos Excel, o app lê a primeira planilha com dados.</div>
+          <div class="form">
+            <div><label>Fonte</label><select id="impFonte"><option>SINAPI</option><option>SICRO</option><option>ORSE</option><option>SEINFRA</option><option>CPOS</option><option>PROPRIA</option></select></div>
+            <div><label>UF</label><select id="impUf"><option value="SC">SC - Santa Catarina</option><option>RS</option><option>PR</option><option>SP</option><option>MG</option><option>RJ</option><option>OUTRA</option></select></div>
+            <div><label>Mês-base</label><input type="month" id="impMes"></div>
+            <div><label>Tipo</label><select id="impTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option><option>Próprio</option></select></div>
+            <div class="span2"><label>Nome da biblioteca</label><input id="impNome" placeholder="Ex.: SINAPI SC 05-2026 Não Desonerado"></div>
+            <div class="span2"><label>Arquivo CSV/XLSX</label><input type="file" id="impFile" accept=".csv,.txt,.xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"></div>
+          </div>
+          <div class="notice" style="margin-top:14px"><b>Colunas aceitas:</b> codigo, descricao, unidade, custo. Para insumos: classificacao, codigo, descricao, unidade, origem, custo. Opcionais para analítico: categoria, insumo_codigo, insumo_descricao, insumo_unidade, coeficiente, preco_unitario. Para SICRO, use o relatório analítico de composições em XLSX.</div>
+          <div class="btns"><button class="btn pri" onclick="previewImport()">📄 Pré-visualizar</button><button class="btn soft" onclick="downloadModelo()">⬇️ Baixar modelo CSV</button></div>
+        </div>
+
+        <div id="officialPanel" style="display:none">
+          <h3>Opção B — Baixar base oficial</h3>
+          <div class="notice warn">
+            Nesta versão estática, o botão prepara a solicitação e mostra o fluxo. Para baixar automaticamente de CAIXA/IBGE/DNIT, será necessário adicionar uma <b>Netlify Function</b> no projeto.
+          </div>
+
+          <div class="form">
+            <div><label>Base oficial</label><select id="ofFonte"><option value="SINAPI">SINAPI</option><option value="SICRO">SICRO</option><option value="ORSE">ORSE</option><option value="SEINFRA">SEINFRA</option><option value="CPOS">CPOS</option></select></div>
+            <div><label>UF padrão</label><select id="ofUf"><option value="SC">SC - Santa Catarina</option><option value="RS">RS</option><option value="PR">PR</option><option value="SP">SP</option><option value="MG">MG</option><option value="RJ">RJ</option><option value="OUTRA">Outra</option></select></div>
+            <div><label>Mês-base</label><input type="month" id="ofMes"></div>
+            <div><label>Tipo</label><select id="ofTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option></select></div>
+          </div>
+
+          <div class="official-grid">
+            <div class="official-card"><h4>SINAPI/SC</h4><p>Principal referência para edificações e obras públicas.</p><button class="btn pri" onclick="prepareOfficialDownload('SINAPI')">Preparar SINAPI/SC</button></div>
+            <div class="official-card"><h4>SICRO</h4><p>Referência para rodovias, pavimentação, drenagem e infraestrutura.</p><button class="btn blue" onclick="prepareOfficialDownload('SICRO')">Preparar SICRO</button></div>
+            <div class="official-card"><h4>ORSE / SEINFRA</h4><p>Bases regionais conectáveis depois por função Netlify.</p><button class="btn soft" onclick="prepareOfficialDownload('ORSE')">Preparar regional</button></div>
+            <div class="official-card"><h4>Atualizar base</h4><p>Estrutura para comparar mês antigo x mês novo futuramente.</p><button class="btn warn" onclick="prepareOfficialDownload('ATUALIZAR')">Preparar atualização</button></div>
+          </div>
+
+          <div id="officialResult" class="notice" style="margin-top:14px;display:none"></div>
+
+          <div class="btns">
+            <button class="btn pri" onclick="downloadOfficialBase()">Buscar e importar automaticamente</button>
+            <button class="btn soft" onclick="setImportMode('upload')">Voltar ao upload manual</button>
+          </div>
+        </div>
+
+        <div id="analyticPanel" style="display:none">
+          <h3>Opção C — Importar Analítico Individual</h3>
+          <div class="notice">
+            Use esta opção para a aba <b>Analítico com Custo</b> do SINAPI. No Excel, selecione a tabela azul do analítico, incluindo o cabeçalho <b>Tipo Item, Código do Item, Descrição, Unidade, Coeficiente, Custo Unit., Custo Total, %AS, Situação</b>, copie e cole abaixo.
+            <br><br><b>Duplicidade:</b> se já existir composição com o mesmo código, ao confirmar o app perguntará se deseja atualizar a existente ou criar uma nova versão analítica.
+          </div>
+
+          <div class="form">
+            <div><label>Fonte</label><select id="anFonte"><option>SINAPI</option><option>SICRO</option><option>PROPRIA</option></select></div>
+            <div><label>UF</label><select id="anUf"><option value="SC">SC - Santa Catarina</option><option>RS</option><option>PR</option><option>SP</option><option>OUTRA</option></select></div>
+            <div><label>Mês-base</label><input type="month" id="anMes"></div>
+            <div><label>Tipo</label><select id="anTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option><option>Próprio</option></select></div>
+
+            <div><label>Código da composição principal</label><input id="anCodigo" placeholder="Ex.: 95995"></div>
+            <div class="span2"><label>Descrição da composição principal</label><input id="anDescricao" placeholder="Ex.: EXECUÇÃO DE PAVIMENTO..."></div>
+            <div><label>Unidade principal</label><input id="anUnidade" placeholder="Ex.: M3"></div>
+            <div><label>Custo principal</label><input id="anCusto" placeholder="Ex.: 1726,37"></div>
+            <div class="span3"><label>Nome da biblioteca</label><input id="anNome" placeholder="Ex.: SINAPI SC Analítico 95995 2026-03"></div>
+          </div>
+
+          <label style="margin-top:14px">Cole aqui o bloco copiado do Excel</label>
+          <textarea id="anPaste" class="analytic-paste" placeholder="Cole aqui as linhas copiadas da aba Analítico com Custo..."></textarea>
+
+          <div class="analytic-help">
+            <div class="box"><b>1. No Excel</b><span class="small muted">Selecione da linha do cabeçalho azul até o último item da composição.</span></div>
+            <div class="box"><b>2. Copie</b><span class="small muted">Use Ctrl+C. O Excel copia como texto separado por tabulação.</span></div>
+            <div class="box"><b>3. Cole no app</b><span class="small muted">Clique em “Pré-visualizar analítico” e confirme a importação.</span></div>
+          </div>
+
+          <div class="notice" style="margin-top:14px">
+            <b>Classificação automática dos itens:</b> itens marcados como COMPOSICAO entram como <b>Composição auxiliar</b>. Itens marcados como INSUMO procuram a categoria no cadastro de insumos importado; se não encontrar, o app tenta identificar Material, Mão de obra ou Equipamento pela descrição.
+          </div>
+          <div id="analyticResult" class="notice" style="display:none;margin-top:14px"></div>
+
+          <div class="btns">
+            <button class="btn pri" onclick="previewAnalyticImport()">Pré-visualizar analítico</button>
+            <button class="btn soft" onclick="fillAnalyticExample()">Exemplo</button>
+            <button class="btn soft" onclick="setImportMode('upload')">Voltar ao upload manual</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="prevCard" style="display:none"><h3>Prévia</h3><div id="prevSummary" class="notice"></div><div class="table"><table id="prevTable"></table></div><div class="btns"><button class="btn pri" onclick="confirmImport()">✅ Confirmar importação</button><button class="btn soft" onclick="clearPrev()">Cancelar</button></div></div>
+    </section>
+
+    <section id="bibliotecas" class="section"><div class="card"><div class="toolbar"><input class="search" id="libQ" oninput="render()" placeholder="Pesquisar biblioteca..."><button class="btn pri" onclick="go('importar')">Importar base</button></div><div id="libList"></div></div></section>
+    <section id="composicoes" class="section"><div class="card"><div class="toolbar"><div class="tool"><input class="search" id="compQ" oninput="render()" placeholder="Pesquisar composição..."><select id="compSrc" onchange="render()"><option value="">Todas as fontes</option><option>SINAPI</option><option>SICRO</option><option>ORSE</option><option>SEINFRA</option><option>PROPRIA</option></select></div><button class="btn pri" onclick="openComp()">Nova composição</button></div><div id="compList"></div></div></section>
+    <section id="insumos" class="section"><div class="card"><div class="toolbar"><input class="search" id="insQ" oninput="render()" placeholder="Pesquisar insumo..."><button class="btn pri" onclick="openSupply()">Novo insumo</button></div><div id="insList"></div></div></section>
+    <section id="orcamentos" class="section"><div class="card"><div class="toolbar"><input class="search" id="orcQ" oninput="render()" placeholder="Pesquisar orçamento..."><div class="tool"><button class="btn pri" onclick="openBudget()">Novo orçamento</button><button class="btn soft" onclick="budgetImportFile.click()">Importar Excel/PDF</button><input type="file" id="budgetImportFile" accept=".xlsx,.xls,.csv,.pdf,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" style="display:none" onchange="importBudgetFile(this.files[0]);this.value=''"></div></div><div id="orcList"></div></div></section>
+
+    <section id="config" class="section">
+      <div class="card"><h3>Empresa e padrões</h3>
+        <div class="form">
+          <div><label>UF padrão</label><select id="cfgUf"><option value="SC">SC - Santa Catarina</option><option>RS</option><option>PR</option><option>SP</option><option>OUTRA</option></select></div>
+          <div><label>Fonte principal</label><select id="cfgFonte"><option>SINAPI</option><option>SICRO</option><option>ORSE</option><option>SEINFRA</option><option>PROPRIA</option></select></div>
+          <div><label>Tipo padrão</label><select id="cfgTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option></select></div>
+          <div><label>BDI padrão (%)</label><input type="number" step="0.01" id="cfgBdi"></div>
+          <div class="span2"><label>Empresa/Responsável</label><input id="cfgEmpresa" placeholder="Nome da empresa"></div>
+          <div><label>CNPJ/CPF</label><input id="cfgDoc" placeholder="00.000.000/0000-00"></div>
+          <div><label>Telefone</label><input id="cfgTel" placeholder="(00) 00000-0000"></div>
+          <div class="span2"><label>E-mail</label><input id="cfgEmail" placeholder="contato@empresa.com"></div>
+          <div class="span2"><label>Endereço</label><input id="cfgEndereco" placeholder="Rua, número, cidade/UF"></div>
+          <div class="span2"><label>Logotipo</label><input type="file" id="cfgLogo" accept="image/*" onchange="loadCompanyLogo()"></div>
+          <div class="span2"><label>Observações da empresa</label><input id="cfgEmpresaObs" placeholder="CREA/CAU, responsável técnico, site etc."></div>
+          <div class="span2"><label>Logotipo atual</label><div class="logo-preview" id="cfgLogoPreview">Nenhum logotipo cadastrado.</div></div>
+        </div>
+        <div class="btns"><button class="btn pri" onclick="saveCfg()">Salvar</button><button class="btn soft" onclick="clearCompanyLogo()">Remover logotipo</button><button class="btn soft" onclick="demo()">Carregar exemplo</button><button class="btn danger" onclick="clearAll()">Apagar tudo</button></div>
+      </div>
+      <div class="card"><h3>Bases do sistema</h3><p>Importação e seleção de bibliotecas ficam nesta área administrativa.</p><div class="btns"><button class="btn pri" onclick="go('importar')">Importar base</button><button class="btn soft" onclick="go('bibliotecas')">Ver bases cadastradas</button></div></div>
+      <div class="card"><h3>Acesso administrativo</h3><p>Proteja a importação de bases com uma senha local deste navegador.</p><div class="form"><div class="span2"><label>Nova senha para importar bases</label><input type="password" id="cfgAdminPass" placeholder="Deixe em branco para manter a senha atual"></div><div class="span2"><label>Confirmar senha</label><input type="password" id="cfgAdminPass2" placeholder="Repita a nova senha"></div></div><div class="notice" style="margin-top:14px">Essa senha limita o acesso dentro do app. Como o site é estático, ela não substitui autenticação real de servidor.</div><div class="btns"><button class="btn pri" onclick="saveAdminPassword()">Salvar senha</button><button class="btn soft" onclick="lockAdmin()">Bloquear agora</button><button class="btn danger" onclick="clearAdminPassword()">Remover senha</button></div></div>
+    </section>
+
+    <section id="backup" class="section">
+      <div class="grid g2">
+        <div class="card"><h3>Exportar backup JSON</h3><p>Baixe todos os dados salvos neste navegador.</p><div class="btns"><button class="btn pri" onclick="exportBackup()">Exportar backup</button></div></div>
+        <div class="card"><h3>Importar backup JSON</h3><p>Restaura backup gerado por este app e substitui os dados atuais.</p><input type="file" id="backupFile" accept=".json"><div class="btns"><button class="btn blue" onclick="importBackup()">Importar backup</button></div></div>
+        <div class="card"><h3>Exportar orçamentos</h3><p>Gera CSV com todos os orçamentos e seus itens.</p><div class="btns"><button class="btn ok" onclick="exportBudgetsCsv()">Exportar orçamentos CSV</button></div></div>
+        <div class="card"><h3>Exportar composições</h3><p>Gera CSV com composições, itens, coeficientes, preços e custos.</p><div class="btns"><button class="btn ok" onclick="exportCompositionsCsv()">Exportar composições CSV</button></div></div>
+        <div class="card"><h3>Exportar insumos</h3><p>Gera CSV com códigos, descrições, categorias, unidades e preços.</p><div class="btns"><button class="btn ok" onclick="exportSuppliesCsv()">Exportar insumos CSV</button></div></div>
+        <div class="card"><h3>Imprimir orçamentos</h3><p>Abre relatório para impressão/PDF com itens e totais.</p><div class="btns"><button class="btn blue" onclick="printBudgets()">Imprimir orçamentos</button></div></div>
+        <div class="card"><h3>Imprimir composições</h3><p>Abre relatório para impressão/PDF com itens analíticos.</p><div class="btns"><button class="btn blue" onclick="printCompositions()">Imprimir composições</button></div></div>
+        <div class="card"><h3>Imprimir insumos</h3><p>Abre relatório para impressão/PDF com cadastro de insumos.</p><div class="btns"><button class="btn blue" onclick="printSupplies()">Imprimir insumos</button></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-bg" id="adminModal"><div class="modal" style="width:min(520px,96vw)">
+  <div class="modal-head"><div><h3 id="adminTitle">Acesso administrativo</h3><p class="muted small" id="adminHelp">Informe a senha para importar bases.</p></div><button class="close" onclick="closeM('adminModal')">×</button></div>
+  <div class="form">
+    <div class="span4"><label id="adminPassLabel">Senha</label><input type="password" id="adminPass" onkeydown="if(event.key==='Enter')unlockAdmin()"></div>
+    <div class="span4" id="adminPass2Wrap" style="display:none"><label>Confirmar senha</label><input type="password" id="adminPass2" onkeydown="if(event.key==='Enter')unlockAdmin()"></div>
+  </div>
+  <div class="btns"><button class="btn pri" onclick="unlockAdmin()">Continuar</button><button class="btn soft" onclick="closeM('adminModal')">Cancelar</button></div>
+</div></div>
+
+<div class="modal-bg" id="supplyModal"><div class="modal">
+  <div class="modal-head"><div><h3 id="supplyTitle">Novo insumo</h3><p class="muted small">Materiais, mão de obra, equipamentos e serviços.</p></div><button class="close" onclick="closeM('supplyModal')">×</button></div>
+  <input type="hidden" id="supId">
+  <div class="form">
+    <div><label>Código</label><input id="supCode"></div><div class="span2"><label>Descrição</label><input id="supDesc"></div><div><label>Unidade</label><input id="supUnit"></div>
+    <div><label>Categoria</label><select id="supCat"><option>Material</option><option>Mão de obra</option><option>Equipamento</option><option>Serviço</option><option>Transporte</option><option>Outro</option></select></div>
+    <div><label>Preço unitário</label><input type="number" step="0.0001" id="supPrice"></div><div><label>Fonte</label><input id="supFonte"></div><div><label>Data-base</label><input type="month" id="supMes"></div>
+    <div class="span4"><label>Observação</label><textarea id="supObs"></textarea></div>
+  </div>
+  <div class="btns"><button class="btn pri" onclick="saveSupply()">Salvar insumo</button><button class="btn soft" onclick="closeM('supplyModal')">Cancelar</button></div>
+</div></div>
+
+<div class="modal-bg" id="compModal"><div class="modal">
+  <div class="modal-head"><div><h3 id="compTitle">Nova composição</h3><p class="muted small">Composição analítica com insumos e coeficientes.</p></div><button class="close" onclick="closeM('compModal')">×</button></div>
+  <input type="hidden" id="compId">
+  <div class="form">
+    <div><label>Código</label><input id="cCode"></div><div class="span2"><label>Descrição</label><input id="cDesc"></div><div><label>Unidade</label><input id="cUnit"></div>
+    <div><label>Fonte</label><select id="cFonte"><option>PROPRIA</option><option>SINAPI</option><option>SICRO</option><option>ORSE</option><option>SEINFRA</option></select></div>
+    <div><label>UF</label><input id="cUf" value="SC"></div><div><label>Mês-base</label><input type="month" id="cMes"></div><div><label>Tipo</label><select id="cTipo"><option>Próprio</option><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option></select></div>
+    <div class="span4"><label>Observações</label><textarea id="cObs"></textarea></div>
+  </div>
+  <h3>Itens da composição</h3>
+  <div class="form">
+    <div><label>Insumo</label><select id="ciSup" onchange="fillCI()"></select></div><div><label>Descrição manual</label><input id="ciDesc"></div>
+    <div><label>Categoria</label><select id="ciCat"><option>Material</option><option>Mão de obra</option><option>Equipamento</option><option>Serviço</option><option>Transporte</option><option>Outro</option></select></div><div><label>Unidade</label><input id="ciUnit"></div>
+    <div><label>Coeficiente</label><input type="number" step="0.000001" id="ciCoef"></div><div><label>Preço unitário</label><input type="number" step="0.0001" id="ciPrice"></div>
+    <div><label>Perda (%)</label><input type="number" step="0.01" id="ciWaste" value="0"></div><div><label>&nbsp;</label><button class="btn blue" onclick="addCI()">Adicionar item</button></div>
+  </div>
+  <div class="table comp-items-table" style="margin-top:14px"><table id="ciTable"></table></div>
+  <div class="summary"><div class="box"><span class="small muted">Materiais</span><div class="v" id="sumMat">R$ 0,00</div></div><div class="box"><span class="small muted">Mão de obra</span><div class="v" id="sumMo">R$ 0,00</div></div><div class="box"><span class="small muted">Outros</span><div class="v" id="sumOut">R$ 0,00</div></div><div class="box"><span class="small muted">Custo unitário</span><div class="v" id="sumTot">R$ 0,00</div></div></div>
+  <div class="btns"><button class="btn pri" onclick="saveComp()">Salvar composição</button><button class="btn soft" onclick="closeM('compModal')">Cancelar</button></div>
+</div></div>
+
+<div class="modal-bg" id="budgetModal"><div class="modal">
+  <div class="modal-head"><div><h3 id="budgetTitle">Novo orçamento</h3><p class="muted small">Itens, quantidades, BDI e total.</p></div><button class="close" onclick="closeM('budgetModal')">×</button></div>
+  <input type="hidden" id="bId">
+  <div class="form">
+    <div class="span2"><label>Nome da obra/orçamento</label><input id="bNome" oninput="scheduleBudgetAutosave()"></div><div><label>Cliente/Órgão</label><input id="bCli" oninput="scheduleBudgetAutosave()"></div><div><label>Data</label><input type="date" id="bData" onchange="scheduleBudgetAutosave()"></div>
+    <div><label>UF</label><input id="bUf" value="SC" oninput="scheduleBudgetAutosave()"></div><div><label>BDI da obra (%)</label><input type="number" step="0.01" id="bBdi" oninput="applyBudgetDefaultBdi()"></div><div class="span2"><label>Observações</label><input id="bObs" oninput="scheduleBudgetAutosave()"></div>
+  </div>
+  <h3>Itens do orçamento</h3>
+  <div class="form">
+    <div class="span2"><label>Base para pesquisar composições</label><select id="bLib" onchange="clearBI();scheduleBudgetAutosave()"></select></div>
+    <div class="span2"><label>Filtro da base</label><input id="bLibInfo" readonly></div>
+    <div class="span2"><label>Grupo/Etapa</label><input id="biGroup" list="budgetGroups" placeholder="Ex.: Administração"><datalist id="budgetGroups"></datalist></div>
+    <div class="span2 suggest-wrap"><label>Composição</label><input id="biCompSearch" placeholder="Digite código ou descrição..." oninput="searchBI()" onfocus="searchBI()" onkeydown="keyBI(event)"><input type="hidden" id="biComp"><div class="suggest-list" id="biSuggest"></div></div><div><label>Quantidade</label><input type="number" step="0.0001" id="biQtd"></div><div><label>BDI (%)</label><input type="number" step="0.01" id="biBdi" readonly title="Espelha o BDI da obra"></div>
+    <div><label>Custo unitário</label><input type="number" step="0.0001" id="biCost"></div><div class="span2"><label>Descrição manual</label><input id="biDesc"></div><div><label>Unidade</label><input id="biUnit"></div><div><label>&nbsp;</label><button class="btn blue" id="biAddBtn" onclick="addBI()">Adicionar item</button></div>
+  </div>
+  <div class="table sheet-table" style="margin-top:14px"><table id="biTable"></table></div>
+  <div class="summary"><div class="box"><span class="small muted">Custo direto</span><div class="v" id="bDireto">R$ 0,00</div></div><div class="box"><span class="small muted">BDI</span><div class="v" id="bBdiTot">R$ 0,00</div></div><div class="box"><span class="small muted">Total final</span><div class="v" id="bTotal">R$ 0,00</div></div><div class="box"><span class="small muted">Itens</span><div class="v" id="bItens">0</div></div></div>
+  <div class="btns"><button class="btn pri" onclick="saveBudget()">Salvar orçamento</button><button class="btn soft" onclick="viewCurrentBudget()">Visualizar</button><button class="btn blue" onclick="printCurrentBudget()">Imprimir</button><button class="btn soft" onclick="closeM('budgetModal')">Fechar</button><span class="autosave-status" id="budgetSaveStatus">Salvamento automático ativo</span></div>
+</div></div>
+
+<div class="modal-bg" id="budgetViewModal"><div class="modal">
+  <div class="modal-head"><div><h3 id="budgetViewTitle">Visualizar orçamento</h3><p class="muted small">Consulta do orçamento no padrão da planilha.</p></div><button class="close" onclick="closeM('budgetViewModal')">×</button></div>
+  <div class="budget-view" id="budgetViewBody"></div>
+  <div class="btns"><button class="btn soft" id="budgetViewEdit" type="button">Editar</button><button class="btn ok" id="budgetViewExcel" type="button">Excel</button><button class="btn blue" id="budgetViewPrint" type="button">Imprimir</button><button class="btn soft" onclick="closeM('budgetViewModal')">Fechar</button></div>
+</div></div>
+
+<div class="modal-bg" id="compositionViewModal" style="z-index:70"><div class="modal">
+  <div class="modal-head"><div><h3 id="compositionViewTitle">Composição de custo</h3><p class="muted small">Itens, coeficientes e custo unitário.</p></div><button class="close" onclick="closeM('compositionViewModal')">×</button></div>
+  <div class="budget-view" id="compositionViewBody"></div>
+  <div class="btns"><button class="btn soft" id="compositionViewEdit" type="button">Editar composição</button><button class="btn blue" id="compositionViewPrint" type="button">Imprimir</button><button class="btn soft" onclick="closeM('compositionViewModal')">Fechar</button></div>
+</div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script type="module">import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';window.pdfjsLib=pdfjsLib;</script>
+<script>
+const KEY='composicoes_obras_sc_v1';
+const DB_NAME='orcc_store_v2',DB_STORE='state',DB_KEY='main';
+let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false;
+function emptyCompany(){return{name:'',doc:'',phone:'',email:'',address:'',notes:'',logo:''}}
+function base(){return{settings:{uf:'SC',fonte:'SINAPI',tipo:'Não desonerado',bdi:25,activeLibraryId:'',theme:'light',company:emptyCompany(),adminPassword:''},libraries:[],supplies:[],compositions:[],budgets:[]}}
+function mergeState(d){let b=base(),settings={...b.settings,...((d||{}).settings||{})};settings.company={...emptyCompany(),...(settings.company||{})};return {...b,...(d||{}),settings}}
+function load(){try{return mergeState(JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){return base()}}
+function openDb(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB indisponível neste navegador.'));return}const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>req.result.createObjectStore(DB_STORE);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+async function loadFromDb(){try{const db=await openDb();const data=await new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readonly'),store=tx.objectStore(DB_STORE),req=store.get(DB_KEY);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});if(data){state=mergeState(data);render()}dbReady=true;return true}catch(e){dbReady=false;console.warn('IndexedDB não carregou',e);return false}}
+async function saveToDb(){const db=await openDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readwrite'),store=tx.objectStore(DB_STORE),req=store.put(state,DB_KEY);req.onsuccess=()=>resolve(true);req.onerror=()=>reject(req.error)})}
+function save(){
+ render();
+ saveToDb().then(()=>{dbReady=true;try{localStorage.setItem(KEY,JSON.stringify({settings:state.settings,libraries:state.libraries,budgets:state.budgets}))}catch(e){localStorage.removeItem(KEY)}}).catch(err=>{
+   try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){alert('Não foi possível salvar os dados. O navegador bloqueou o IndexedDB e o localStorage está cheio.\n\nDetalhe: '+(err?.message||e?.message||err))}
+ });
+ return true;
+}
+function stateSizeKb(){try{return Math.round(new Blob([JSON.stringify(state)]).size/1024)}catch(e){return Math.round(JSON.stringify(state).length/1024)}}
+function id(p){return p+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8)}
+function n(v){if(typeof v==='number')return v;if(!v)return 0;let s=String(v).replace(/R\$/g,'').replace(/\s/g,'');if(s.includes(',')&&s.includes('.')){s=s.lastIndexOf(',')>s.lastIndexOf('.')?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'')}else if(s.includes(','))s=s.replace(',','.');let r=parseFloat(s);return isNaN(r)?0:r}
+function br(v){return n(v).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
+function esc(s){return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]))}
+function fmt(v,d=4){return n(v).toLocaleString('pt-BR',{maximumFractionDigits:d})}
+function compCost(c){return (c.items&&c.items.length)?c.items.reduce((a,i)=>a+itemTotal(i),0):n(c.cost)}
+function itemTotal(i){return n(i.coefficient)*n(i.price)*(1+n(i.waste)/100)}
+function classifyAnalyticItem(tipo,cod,desc){
+  const tipoTxt=String(tipo||'').trim().toUpperCase();
+  const codTxt=String(cod||'').trim();
+  if(tipoTxt.includes('COMPOS')) return 'Composição auxiliar';
+  if(tipoTxt.includes('INSUM')){
+    const supply=state.supplies.find(s=>String(s.code||'').trim()===codTxt);
+    if(supply && supply.category) return supply.category;
+    const d=String(desc||'').toUpperCase();
+    if(d.includes('PEDREIRO')||d.includes('SERVENTE')||d.includes('ENCANADOR')||d.includes('ELETRICISTA')||d.includes('CARPINTEIRO')||d.includes('PINTOR')||d.includes('OPERADOR')) return 'Mão de obra';
+    if(d.includes('CAMINHAO')||d.includes('CAMINHÃO')||d.includes('ROLO')||d.includes('TRATOR')||d.includes('VIBRO')||d.includes('BETONEIRA')||d.includes('EQUIPAMENTO')) return 'Equipamento';
+    return 'Material';
+  }
+  return tipoTxt || 'Outro';
+}
+function applyTheme(){
+ const theme=state.settings.theme==='dark'?'dark':'light';
+ document.body.classList.toggle('dark',theme==='dark');
+ if(typeof themeToggle!=='undefined')themeToggle.textContent=theme==='dark'?'☀️ Modo claro':'🌙 Modo noturno';
+ if(typeof sideThemeToggle!=='undefined')sideThemeToggle.textContent=theme==='dark'?'☀️ Modo claro':'🌙 Modo noturno';
+}
+function toggleTheme(){
+ state.settings.theme=state.settings.theme==='dark'?'light':'dark';
+ applyTheme();
+ save();
+}
+function adminHash(v){let h=2166136261;String(v||'').split('').forEach(ch=>{h^=ch.charCodeAt(0);h=Math.imul(h,16777619)});return (h>>>0).toString(36)}
+function requestAdminAccess(target='importar'){
+ adminTarget=target;
+ const has=!!state.settings.adminPassword;
+ adminTitle.textContent=has?'Acesso administrativo':'Criar senha administrativa';
+ adminHelp.textContent=has?'Informe a senha para acessar a área administrativa de bases.':'Crie uma senha para proteger a área administrativa de bases.';
+ adminPassLabel.textContent=has?'Senha':'Nova senha';
+ adminPass.value='';adminPass2.value='';adminPass2Wrap.style.display=has?'none':'block';
+ openM('adminModal');setTimeout(()=>adminPass.focus(),80);
+}
+function unlockAdmin(){
+ const pass=adminPass.value||'';
+ if(!state.settings.adminPassword){
+   if(pass.length<4){alert('Use uma senha com pelo menos 4 caracteres.');return}
+   if(pass!==adminPass2.value){alert('A confirmação da senha não confere.');return}
+   state.settings.adminPassword=adminHash(pass);
+   adminUnlocked=true;
+   save();
+   closeM('adminModal');
+   go(adminTarget);
+   alert('Senha administrativa criada.');
+   return;
+ }
+ if(adminHash(pass)!==state.settings.adminPassword){alert('Senha incorreta.');return}
+ adminUnlocked=true;closeM('adminModal');go(adminTarget);
+}
+function lockAdmin(){adminUnlocked=false;alert('Área administrativa bloqueada.')}
+function saveAdminPassword(){
+ const p=cfgAdminPass.value||'',p2=cfgAdminPass2.value||'';
+ if(!p){alert('Digite a nova senha.');return}
+ if(p.length<4){alert('Use uma senha com pelo menos 4 caracteres.');return}
+ if(p!==p2){alert('A confirmação da senha não confere.');return}
+ state.settings.adminPassword=adminHash(p);adminUnlocked=true;cfgAdminPass.value='';cfgAdminPass2.value='';save();alert('Senha administrativa salva.');
+}
+function clearAdminPassword(){if(confirm('Remover a senha da área administrativa de bases?')){state.settings.adminPassword='';adminUnlocked=false;save();alert('Senha removida. A próxima entrada em Bases cadastradas ou Importar base pedirá uma nova senha.')}}
+function go(s){
+ if((s==='importar'||s==='bibliotecas')&&!adminUnlocked){requestAdminAccess(s);return}
+ document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById(s).classList.add('active');document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.s===s));let t={home:['Página inicial','Ambiente de orçamento com composições, insumos e relatórios.'],importar:['Importar base','Configuração de bases oficiais ou próprias em CSV/XLSX.'],bibliotecas:['Bases cadastradas','Bibliotecas importadas por fonte, UF, mês-base e tipo.'],composicoes:['Composições','Composições sintéticas e analíticas para orçamento.'],insumos:['Insumos','Materiais, mão de obra, equipamentos e serviços.'],orcamentos:['Orçamentos','Monte orçamentos com composições, quantidade e BDI.'],config:['Configurações','Empresa, logotipo e padrões do app.'],backup:['Backup e saídas','Exportação, impressão e restauração de dados.']}[s];title.textContent=t[0];subtitle.textContent=t[1]}
+document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.s));
+
+function setImportMode(mode){
+  const isUpload = mode === 'upload';
+  const isOfficial = mode === 'official';
+  const isAnalytic = mode === 'analytic';
+  if(typeof optionUpload!=='undefined') optionUpload.classList.toggle('active', isUpload);
+  if(typeof optionOfficial!=='undefined') optionOfficial.classList.toggle('active', isOfficial);
+  if(typeof optionAnalytic!=='undefined') optionAnalytic.classList.toggle('active', isAnalytic);
+  if(typeof uploadPanel!=='undefined') uploadPanel.style.display = isUpload ? 'block' : 'none';
+  if(typeof officialPanel!=='undefined') officialPanel.style.display = isOfficial ? 'block' : 'none';
+  if(typeof analyticPanel!=='undefined') analyticPanel.style.display = isAnalytic ? 'block' : 'none';
+}
+function prepareOfficialDownload(fonte){
+  setImportMode('official');
+  if(fonte && fonte !== 'ATUALIZAR' && fonte !== 'ORSE') ofFonte.value = fonte;
+  if(fonte === 'ORSE') ofFonte.value = 'ORSE';
+  ofUf.value = state.settings.uf || 'SC';
+  if(!ofMes.value) ofMes.value = new Date().toISOString().slice(0,7);
+  ofTipo.value = state.settings.tipo || 'Não desonerado';
+  const fonteTxt = fonte === 'ATUALIZAR' ? 'Atualização da base ativa' : ofFonte.value + '/' + ofUf.value;
+  officialResult.style.display = 'block';
+  officialResult.innerHTML = `
+    <b>Solicitação preparada:</b> ${fonteTxt}<br>
+    <b>Mês-base:</b> ${ofMes.value || 'mês atual'} | <b>Tipo:</b> ${ofTipo.value}<br><br>
+    Clique em <b>Buscar e importar automaticamente</b>. Se a base já estiver disponível no projeto, o app baixa, lê e mostra a prévia para confirmação.
+  `;
+}
+function importRowsFromOfficial(rows,fileName,meta={}){
+ if(rows.length<2){alert('Arquivo oficial sem dados legíveis.');return}
+ const old={name:impNome.value,fonte:impFonte.value,uf:impUf.value,mes:impMes.value,tipo:impTipo.value};
+ if(meta.fonte)impFonte.value=meta.fonte;
+ if(meta.uf)impUf.value=meta.uf;
+ if(meta.mes)impMes.value=meta.mes;
+ if(meta.tipo)impTipo.value=meta.tipo;
+ if(meta.name)impNome.value=meta.name;
+ const fakeFile={name:fileName||'base_oficial.xlsx'};
+ if(parseSicroAnalyticRows(rows,fakeFile))return;
+ if(parseAnalyticSinapiRows(rows,fakeFile))return;
+ impNome.value=old.name;impFonte.value=old.fonte;impUf.value=old.uf;impMes.value=old.mes;impTipo.value=old.tipo;
+ alert('A base foi baixada, mas o formato ainda não é reconhecido automaticamente. Use o upload manual ou converta para CSV modelo.');
+}
+async function downloadOfficialBase(){
+ const params=new URLSearchParams({fonte:ofFonte.value,uf:ofUf.value,mes:ofMes.value,tipo:ofTipo.value});
+ officialResult.style.display='block';
+ officialResult.innerHTML='<b>Buscando base...</b>';
+ try{
+   const res=await fetch('/.netlify/functions/baixar-base?'+params.toString());
+   const data=await res.json().catch(()=>({}));
+   if(!res.ok||!data.ok){
+     officialResult.innerHTML=`<b>Base não encontrada automaticamente.</b><br>${esc(data.mensagem||'Tente baixar pelo site oficial.')} ${data.portalOficial?`<br><br><a class="btn soft" target="_blank" rel="noopener" href="${esc(data.portalOficial)}">Abrir site oficial</a>`:''}`;
+     return;
+   }
+   officialResult.innerHTML=`<b>Base encontrada:</b> ${esc(data.fileName||'arquivo oficial')}<br>Baixando e preparando prévia...`;
+   const fileRes=await fetch(data.downloadUrl);
+   if(!fileRes.ok)throw new Error('Não foi possível baixar o arquivo informado pela função.');
+   const buffer=await fileRes.arrayBuffer();
+   if(typeof XLSX==='undefined')throw new Error('Biblioteca XLSX não carregou no navegador.');
+   const workbook=XLSX.read(new Uint8Array(buffer),{type:'array'});
+   const meta={fonte:data.parametros?.fonte||ofFonte.value,uf:data.parametros?.uf||ofUf.value,mes:data.parametros?.mes||ofMes.value,tipo:data.parametros?.tipo||ofTipo.value};
+   const baseName=`${meta.fonte} ${meta.uf} ${meta.mes} ${meta.tipo}`;
+   importRowsFromOfficial(excelRowsFromWorkbook(workbook),data.fileName||'base_oficial.xlsx',{...meta,name:baseName});
+   officialResult.innerHTML=`<b>Base baixada.</b><br>${esc(data.observacao||'Confira a prévia abaixo e confirme a importação.')}`;
+ }catch(err){
+   officialResult.innerHTML='<b>Erro na busca automática.</b><br>'+esc(err?.message||err);
+ }
+}
+function generateNetlifyFunctionModel(){
+  const model = `// netlify/functions/baixar-base.mts
+// Modelo inicial para a Opcao B - Baixar base oficial.
+
+export default async (req: Request) => {
+  try {
+    const url = new URL(req.url);
+    const fonte = url.searchParams.get('fonte') || 'SINAPI';
+    const uf = url.searchParams.get('uf') || 'SC';
+    const mes = url.searchParams.get('mes') || '';
+    const tipo = url.searchParams.get('tipo') || 'Nao desonerado';
+
+    // Proxima etapa:
+    // 1. Localizar o link oficial da base conforme fonte/UF/mes/tipo.
+    // 2. Baixar ZIP/XLS/XLSX/CSV.
+    // 3. Converter para JSON no formato do app.
+    // 4. Retornar composicoes, insumos e biblioteca.
+
+    return Response.json({
+      ok: true,
+      mensagem: 'Function modelo criada. Implementar download oficial da fonte.',
+      parametros: { fonte, uf, mes, tipo },
+      biblioteca: null,
+      composicoes: [],
+      insumos: []
+    });
+  } catch (error) {
+    return Response.json({ ok: false, erro: error instanceof Error ? error.message : String(error) }, { status: 500 });
+  }
+};`;
+  download(model, 'baixar-base.mts', 'text/typescript;charset=utf-8');
+  officialResult.style.display = 'block';
+  officialResult.innerHTML = '<b>Modelo gerado.</b><br>Foi baixado o arquivo <b>baixar-base.mts</b>. Ele deve ficar em <b>netlify/functions</b>. O projeto tambem ja recebeu esse arquivo nessa pasta.';
+}
+function splitPastedTable(text){
+  // Parser robusto para dados copiados do Excel.
+  // Aceita TAB, aspas e quebras de linha dentro da própria célula.
+  text=String(text||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  let rows=[], row=[], field='', q=false;
+  for(let i=0;i<text.length;i++){
+    let c=text[i], nx=text[i+1];
+    if(c==='"'){
+      if(q && nx==='"'){field+='"';i++;}
+      else q=!q;
+    }else if(c==='\t' && !q){
+      row.push(field.trim());field='';
+    }else if(c==='\n' && !q){
+      row.push(field.trim());
+      if(row.some(x=>String(x).trim())) rows.push(row);
+      row=[];field='';
+    }else{
+      field+=c;
+    }
+  }
+  row.push(field.trim());
+  if(row.some(x=>String(x).trim())) rows.push(row);
+  return rows;
+}
+function findCol(headers, names){
+  const normHeaders=headers.map(h=>norm(String(h||'').replace(/\n+/g,' ')));
+  for(const name of names){
+    const target=norm(name);
+    let idx=normHeaders.indexOf(target);
+    if(idx>=0) return idx;
+    idx=normHeaders.findIndex(h=>h.includes(target)||target.includes(h));
+    if(idx>=0) return idx;
+  }
+  return -1;
+}
+function previewAnalyticImport(){
+  const codigo=(anCodigo.value||'').trim();
+  const descricao=(anDescricao.value||'').trim();
+  const unidade=(anUnidade.value||'').trim();
+  const custo=n(anCusto.value);
+  const texto=anPaste.value||'';
+  if(!codigo || !descricao || !unidade){
+    alert('Preencha código, descrição e unidade da composição principal.');
+    return;
+  }
+  const rows=splitPastedTable(texto);
+  if(rows.length<2){
+    alert('Cole a tabela copiada do Excel, incluindo cabeçalho e itens.');
+    return;
+  }
+
+  let headerIndex=rows.findIndex(r=>r.some(c=>norm(String(c||'').replace(/\n+/g,' ')).includes('tipo_item')) && r.some(c=>norm(String(c||'').replace(/\n+/g,' ')).includes('codigo')));
+  if(headerIndex<0) headerIndex=0;
+  const headers=rows[headerIndex];
+  const data=rows.slice(headerIndex+1);
+
+  const idxTipo=findCol(headers,['Tipo Item','Tipo']);
+  const idxCod=findCol(headers,['Código do Item','Codigo do Item','Código','Codigo']);
+  const idxDesc=findCol(headers,['Descrição','Descricao']);
+  const idxUn=findCol(headers,['Unidade','Un.','UN']);
+  const idxCoef=findCol(headers,['Coeficiente','Coef.','Coef']);
+  const idxPU=findCol(headers,['Custo Unit.','Custo Unit','Preço Unitário','Preco Unitario','Custo Unitario']);
+  const idxTotal=findCol(headers,['Custo Total','Total']);
+  const idxSit=findCol(headers,['Situação','Situacao']);
+
+  if(idxCod<0 || idxDesc<0 || idxUn<0 || idxCoef<0 || idxPU<0){
+    alert('Não consegui reconhecer as colunas. Copie o cabeçalho azul completo: Tipo Item, Código do Item, Descrição, Unidade, Coeficiente, Custo Unit., Custo Total, %AS, Situação.');
+    return;
+  }
+
+  let items=[];
+  data.forEach(r=>{
+    let tipo=idxTipo>=0 ? r[idxTipo] : '';
+    let cod=r[idxCod]||'';
+    let desc=r[idxDesc]||'';
+    let un=r[idxUn]||'';
+    let coef=n(r[idxCoef]);
+    let pu=n(r[idxPU]);
+    let total=idxTotal>=0?n(r[idxTotal]):coef*pu;
+    let sit=idxSit>=0?r[idxSit]:'';
+    if(!cod && !desc) return;
+    // Ignora a linha principal da composição quando ela vem junto no bloco colado.
+    // Na planilha SINAPI, essa linha costuma ter:
+    // - Código do item igual ao código principal;
+    // - Coeficiente vazio ou zero;
+    // - Custo unitário vazio ou zero;
+    // - Categoria preenchida com o próprio código da composição.
+    const codLimpo=String(cod||'').trim();
+    const codigoPrincipal=String(codigo||'').trim();
+    const tipoLimpo=String(tipo||'').trim().toUpperCase();
+    const descLimpa=String(desc||'').trim().toUpperCase();
+    const descPrincipal=String(descricao||'').trim().toUpperCase();
+    const linhaPrincipal =
+      codLimpo===codigoPrincipal ||
+      tipoLimpo===codigoPrincipal ||
+      (coef===0 && pu===0 && total===0) ||
+      (descPrincipal && descLimpa && descLimpa.includes(descPrincipal.slice(0,40)));
+    if(linhaPrincipal) return;
+    items.push({
+      id:id('item'),
+      supplyId:'',
+      code:cod,
+      description:desc,
+      category:classifyAnalyticItem(tipo,cod,desc),
+      unit:un,
+      coefficient:coef,
+      price:pu,
+      waste:0,
+      total:total,
+      situation:sit
+    });
+  });
+
+  if(!items.length){
+    alert('Nenhum item interno foi identificado.');
+    return;
+  }
+
+  const fonte=anFonte.value||'SINAPI';
+  const uf=anUf.value||'SC';
+  const mes=anMes.value||new Date().toISOString().slice(0,7);
+  const tipo=anTipo.value||'Não desonerado';
+  const nome=(anNome.value||`${fonte} ${uf} Analítico ${codigo} ${mes}`).trim();
+
+  const comp={
+    id:id('comp'),
+    code:codigo,
+    description:descricao,
+    unit:unidade,
+    source:fonte,
+    uf,
+    baseDate:mes,
+    type:tipo,
+    note:'Composição analítica individual importada da aba Analítico com Custo.',
+    libraryId:'',
+    items,
+    cost:custo || items.reduce((a,i)=>a+itemTotal(i),0)
+  };
+
+  buffer={
+    library:{id:id('lib'),name:nome,source:fonte,uf,baseDate:mes,type:tipo,createdAt:new Date().toISOString(),compositionCount:1,supplyCount:0,mode:'analitico_individual'},
+    compositions:[comp],
+    supplies:[],
+    invalid:0
+  };
+
+  analyticResult.style.display='block';
+  analyticResult.innerHTML=`<b>Analítico identificado:</b><br>Composição: <b>${esc(codigo)}</b> — ${esc(descricao)}<br>Itens internos: <b>${items.length}</b><br>Custo principal: <b>${br(comp.cost)}</b>`;
+
+  renderPrev();
+}
+function fillAnalyticExample(){
+  anCodigo.value='95995';
+  anDescricao.value='EXECUÇÃO DE PAVIMENTO COM APLICAÇÃO DE CONCRETO ASFÁLTICO';
+  anUnidade.value='M3';
+  anCusto.value='1726,37';
+  anNome.value='SINAPI SC Analítico 95995 2026-03';
+  anMes.value=anMes.value||new Date().toISOString().slice(0,7);
+  anPaste.value='Tipo Item\tCódigo do Item\tDescrição\tUnidade\tCoeficiente\tCusto Unit.\tCusto Total\t%AS\tSituação\nCOMPOSICAO\t96464\tROLO COMPACTADOR DE PNEUS\tCHI\t0,2423882\t100,09\t24,26\t-\tCOM CUSTO\nINSUMO\t1518\tCONCRETO BETUMINOSO USINADO A QUENTE\tT\t2,5663714\t610,00\t1565,48\t-\tCOM PREÇO';
+}
+
+function render(){
+ applyTheme();
+ stLib.textContent=state.libraries.length;stComp.textContent=state.compositions.length;stIns.textContent=state.supplies.length;stOrc.textContent=state.budgets.length;
+ let lib=state.libraries.find(l=>l.id===state.settings.activeLibraryId);activeLib.textContent=lib?'📚 Biblioteca ativa: '+lib.name:'📚 Biblioteca ativa: nenhuma';
+ cfgUf.value=state.settings.uf;cfgFonte.value=state.settings.fonte;cfgTipo.value=state.settings.tipo;cfgBdi.value=state.settings.bdi;impUf.value=state.settings.uf;impFonte.value=state.settings.fonte;impTipo.value=state.settings.tipo;
+ renderCompany();
+ fillSelects();renderHome();renderLibs();renderSupplies();renderComps();renderBudgets();
+}
+function renderHome(){
+ if(typeof homeRecent==='undefined')return;
+ const list=[...state.budgets].sort((a,b)=>String(b.updatedAt||b.date||'').localeCompare(String(a.updatedAt||a.date||''))).slice(0,5);
+ homeRecent.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Orçamento</th><th>Cliente</th><th>Data</th><th class="right">Total</th><th>Ações</th></tr></thead><tbody>${list.map(b=>{let t=budgetTotals(b.items||[]);return`<tr><td><b>${esc(b.name)}</b></td><td>${esc(b.client||'')}</td><td>${esc(b.date||'')}</td><td class="right strong">${br(t.total)}</td><td class="action-cell"><div class="action-stack"><button class="btn soft" onclick="openBudget('${b.id}')">Abrir</button><button class="btn blue" onclick="printBudget('${b.id}')">Imprimir</button></div></td></tr>`}).join('')}</tbody></table></div>`:'<div class="empty">Nenhum orçamento criado.</div>';
+}
+function company(){state.settings.company={...emptyCompany(),...(state.settings.company||{})};return state.settings.company}
+function renderCompany(){
+ const c=company();
+ if(typeof cfgEmpresa==='undefined')return;
+ cfgEmpresa.value=c.name||'';cfgDoc.value=c.doc||'';cfgTel.value=c.phone||'';cfgEmail.value=c.email||'';cfgEndereco.value=c.address||'';cfgEmpresaObs.value=c.notes||'';
+ cfgLogoPreview.innerHTML=c.logo?`<img src="${c.logo}" alt="Logotipo da empresa">`:'Nenhum logotipo cadastrado.';
+}
+function saveCfg(){
+ const c={...company(),name:cfgEmpresa.value.trim(),doc:cfgDoc.value.trim(),phone:cfgTel.value.trim(),email:cfgEmail.value.trim(),address:cfgEndereco.value.trim(),notes:cfgEmpresaObs.value.trim()};
+ state.settings={...state.settings,uf:cfgUf.value,fonte:cfgFonte.value,tipo:cfgTipo.value,bdi:n(cfgBdi.value),company:c};
+ save();alert('Configurações salvas.');
+}
+function loadCompanyLogo(){
+ const f=cfgLogo.files&&cfgLogo.files[0];if(!f)return;
+ if(!f.type.startsWith('image/')){alert('Selecione uma imagem para o logotipo.');cfgLogo.value='';return}
+ if(f.size>900000&&!confirm('O logotipo é grande e pode ocupar espaço no navegador. Deseja salvar mesmo assim?')){cfgLogo.value='';return}
+ const r=new FileReader();
+ r.onload=e=>{state.settings.company={...company(),logo:e.target.result};renderCompany();save();alert('Logotipo cadastrado.');};
+ r.readAsDataURL(f);
+}
+function clearCompanyLogo(){state.settings.company={...company(),logo:''};if(typeof cfgLogo!=='undefined')cfgLogo.value='';renderCompany();save();alert('Logotipo removido.')}
+function csvParse(text){let rows=[],cur=[],f='',q=false,del=(text.split(/\r?\n/).slice(0,5).join('\n').match(/;/g)||[]).length>=(text.split(/\r?\n/).slice(0,5).join('\n').match(/,/g)||[]).length?';':',';for(let i=0;i<text.length;i++){let c=text[i],nx=text[i+1];if(c=='"'){if(q&&nx=='"'){f+='"';i++}else q=!q}else if(c==del&&!q){cur.push(f);f=''}else if((c=='\n'||c=='\r')&&!q){if(c=='\r'&&nx=='\n')i++;cur.push(f);if(cur.some(x=>String(x).trim()))rows.push(cur);cur=[];f=''}else f+=c}cur.push(f);if(cur.some(x=>String(x).trim()))rows.push(cur);return rows}
+function norm(h){return String(h||'').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')}
+function pick(r,arr){for(let a of arr){let k=norm(a);if(r[k]!==undefined&&r[k]!=='')return r[k]}return''}
+function analyzeImportBuffer(b){
+ const warnings=[];
+ const mode=b.library?.mode||'composicoes';
+ const zeroSup=b.supplies.filter(s=>n(s.price)===0).length;
+ const zeroComp=b.compositions.filter(c=>n(compCost(c))===0).length;
+ const noUnitSup=b.supplies.filter(s=>!String(s.unit||'').trim()).length;
+ const noUnitComp=b.compositions.filter(c=>!String(c.unit||'').trim()).length;
+ if(zeroSup)warnings.push(zeroSup+' insumo(s) com preco igual a zero. Confira se isso e esperado na base.');
+ if(zeroComp)warnings.push(zeroComp+' composicao(oes) com custo igual a zero. Elas podem distorcer orcamentos.');
+ if(noUnitSup)warnings.push(noUnitSup+' insumo(s) sem unidade informada.');
+ if(noUnitComp)warnings.push(noUnitComp+' composicao(oes) sem unidade informada.');
+ if(b.invalid)warnings.push(b.invalid+' linha(s) foram ignoradas por falta de codigo e descricao.');
+ if(mode==='insumos'){
+   const incoming=new Set(b.supplies.map(s=>String(s.code||'').trim()).filter(Boolean));
+   const dup=state.supplies.filter(s=>incoming.has(String(s.code||'').trim())).length;
+   if(dup)warnings.push(dup+' insumo(s) ja existem no cadastro atual com o mesmo codigo. A importacao adicionara novos registros.');
+ }else{
+   const incoming=new Set(b.compositions.map(c=>String(c.code||'').trim()).filter(Boolean));
+   const dup=state.compositions.filter(c=>incoming.has(String(c.code||'').trim()) && (!c.uf || c.uf===b.library.uf)).length;
+   if(dup)warnings.push(dup+' composicao(oes) ja existem no cadastro atual com o mesmo codigo/UF. A importacao adicionara novos registros.');
+ }
+ const projectedKb=stateSizeKb()+Math.round(JSON.stringify(b).length/1024);
+ if(projectedKb>4000)warnings.push('O armazenamento local ficara perto do limite do navegador (~'+projectedKb+' KB). Faca backup JSON com frequencia.');
+ return warnings;
+}
+function rowsContainHeaders(rows,required){
+ return rows.some(r=>{let h=r.map(x=>norm(String(x||'').replace(/\n+/g,' ')));return required.every(k=>h.includes(k))});
+}
+function excelRowsFromWorkbook(workbook){
+ const sheets=workbook.SheetNames.map(name=>({name,sheet:workbook.Sheets[name]}));
+ const read=s=>XLSX.utils.sheet_to_json(s,{header:1,raw:false,defval:''}).map(r=>r.map(c=>String(c??'').trim()));
+ for(const x of sheets){
+   const rows=read(x.sheet);
+   if(rowsContainHeaders(rows,['codigo_da_composicao','tipo_item','codigo_do_item','coeficiente']))return rows;
+ }
+ for(const x of sheets){
+   const rows=read(x.sheet);
+   if(rowsContainHeaders(rows,['codigo','descricao','unidade','custo']))return rows;
+ }
+ for(const x of sheets){
+   const rows=read(x.sheet);
+   if(rows.some(r=>r.some(c=>c)))return rows;
+ }
+ return [];
+}
+function loadImportRows(file,onRows){
+ const name=(file.name||'').toLowerCase();
+ const isExcel=/\.xlsx?$/.test(name);
+ const rd=new FileReader();
+ rd.onerror=()=>alert('Não foi possível ler o arquivo selecionado.');
+ if(isExcel){
+   rd.onload=e=>{
+     if(typeof XLSX==='undefined'){
+       alert('A biblioteca de leitura XLSX não carregou. Verifique a conexão com a internet ou salve a planilha como CSV.');
+       return;
+     }
+     try{
+       const workbook=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
+       onRows(excelRowsFromWorkbook(workbook));
+     }catch(err){
+       alert('Não foi possível ler o XLSX: '+err.message);
+     }
+   };
+   rd.readAsArrayBuffer(file);
+ }else{
+   rd.onload=e=>onRows(csvParse(e.target.result));
+   rd.readAsText(file,'UTF-8');
+ }
+}
+function sicroMonth(v){
+ const s=String(v||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+ const m={janeiro:'01',fevereiro:'02',marco:'03',abril:'04',maio:'05',junho:'06',julho:'07',agosto:'08',setembro:'09',outubro:'10',novembro:'11',dezembro:'12'};
+ const p=s.match(/([a-z]+)\/(\d{4})/);
+ return p&&m[p[1]]?`${p[2]}-${m[p[1]]}`:String(v||'');
+}
+function sicroUf(v){
+ const s=String(v||'').trim();
+ const map={'Santa Catarina':'SC','Paraná':'PR','Parana':'PR','Rio Grande do Sul':'RS','São Paulo':'SP','Sao Paulo':'SP','Minas Gerais':'MG','Rio de Janeiro':'RJ'};
+ return map[s]||s||'SC';
+}
+function parseSicroAnalyticRows(rows,file){
+ const hasSicro=rows.slice(0,30).some(r=>String(r[0]||'').toUpperCase().includes('SISTEMA DE CUSTOS REFERENCIAIS DE OBRAS - SICRO'));
+ if(!hasSicro)return false;
+ const fonte='SICRO';
+ let uf=impUf.value||'SC',mes=impMes.value||new Date().toISOString().slice(0,7),tipo=impTipo.value||'Referencial';
+ const nome=impNome.value.trim()||`${fonte} ${uf} ${mes} Analítico`;
+ const comps=[],supplies=new Map();
+ let current=null,section='',pendingUf=uf,pendingMes=mes,pendingUnit='',pendingProduction=1,invalid=0;
+ const codeRe=/^\d{7}$/;
+ const itemCodeRe=/^[A-Z]?\d{4,7}$/i;
+ function category(sec){
+   if(sec.startsWith('A -'))return 'Equipamento';
+   if(sec.startsWith('B -'))return 'Mão de obra';
+   if(sec.startsWith('C -'))return 'Material';
+   if(sec.startsWith('D -'))return 'Composição auxiliar';
+   if(sec.startsWith('E -'))return 'Tempo fixo';
+   if(sec.startsWith('F -'))return 'Transporte';
+   return 'Outro';
+ }
+ function finish(){
+   if(!current)return;
+   const sum=current.items.reduce((a,i)=>a+itemTotal(i),0);
+   if(n(current.cost)&&sum>0&&Math.abs(sum-n(current.cost))>Math.max(0.01,n(current.cost)*0.01)){
+     const factor=n(current.cost)/sum;
+     current.items=current.items.map(i=>({...i,price:n(i.price)*factor}));
+     current.note='Importado do relatório analítico SICRO. Itens ajustados proporcionalmente ao Custo Unitário Direto Total oficial.';
+   }
+   if(!n(current.cost))current.cost=current.items.reduce((a,i)=>a+itemTotal(i),0);
+   comps.push(current);
+ }
+ rows.forEach(r=>{
+   const c=r.map(x=>String(x??'').trim());
+   const a=c[0],b=c[1];
+   if(a.toUpperCase().includes('SISTEMA DE CUSTOS REFERENCIAIS DE OBRAS - SICRO')){
+     pendingUf=sicroUf(c[3]||uf);uf=pendingUf;
+     return;
+   }
+   if(a==='Custo Unitário de Referência'){
+     pendingMes=sicroMonth(c[3]||mes);mes=pendingMes||mes;pendingProduction=n(c[7])||1;pendingUnit=c[8]||pendingUnit;
+     return;
+   }
+   const isCompositionHeader=codeRe.test(a)&&b&&c.some(x=>String(x||'').toLowerCase().includes('valores em reais'));
+   if(isCompositionHeader){
+     finish();
+     current={id:id('comp'),code:a,description:b,unit:pendingUnit,source:fonte,uf:pendingUf||uf,baseDate:pendingMes||mes,type:tipo,note:'Importado do relatório analítico SICRO.',libraryId:'',items:[],cost:0,production:pendingProduction||1};
+     section='';
+     return;
+   }
+   if(!current)return;
+   if(/^[A-F]\s+-\s+/.test(a)){section=a;return}
+   if(c.some(x=>x.includes('Custo unitário direto total'))){
+     current.cost=n(c[8]||c[7]||c[6]);
+     return;
+   }
+   if(c.some(x=>x.includes('Custo do FIC'))){
+     const fic=n(c[8]||c[7]||c[6]);
+     if(fic)current.items.push({id:id('item'),supplyId:'',code:'FIC',description:'Fator de Influência da Chuva - FIC',category:'Outros',unit:current.unit||'',coefficient:1,price:fic,waste:0});
+     return;
+   }
+   if(!a||!b||!itemCodeRe.test(a))return;
+   if(b.toLowerCase().includes('custo ')){invalid++;return}
+   const cat=category(section);
+   let coef=0,unit='',price=0,total=0,refCode=a,desc=b;
+   if(section.startsWith('E -')){
+     refCode=c[2]||a;coef=n(c[3]);unit=c[4]||'';price=n(c[6]);total=n(c[8]);
+   }else if(section.startsWith('F -')){
+     coef=n(c[2]);unit=c[3]||'';price=0;total=n(c[8]);
+     if(!total)return;
+   }else if(section.startsWith('A -')){
+     const qtd=n(c[2])||1,oper=n(c[3]),improd=n(c[4]),prod=n(c[5]),improdCost=n(c[6]);
+     const total=n(c[8]);
+     coef=qtd;
+     unit='h';
+     price=(total||((oper*prod)+(improd*improdCost))*qtd)/(current.production||1);
+   }else{
+     coef=n(c[2]);unit=c[3]||'';price=n(c[5]);total=n(c[8]);
+     if(section.startsWith('B -')&&price)price=price/(current.production||1);
+     if(!price&&coef&&total)price=total/coef;
+   }
+   if(!coef&&!total)return;
+   if(!price&&coef&&total)price=total/coef;
+   current.items.push({id:id('item'),supplyId:'',code:refCode,description:desc,category:cat,unit,coefficient:coef||1,price,waste:0});
+   const key=String(a).trim();
+   if(key&&!supplies.has(key)&&cat!=='Composição auxiliar'&&cat!=='Tempo fixo'&&cat!=='Transporte')supplies.set(key,{id:id('sup'),code:a,description:desc,unit,category:cat,price,source:fonte,baseDate:pendingMes||mes,note:'Importado do relatório analítico SICRO.'});
+ });
+ finish();
+ if(!comps.length)return false;
+ buffer={library:{id:id('lib'),name:nome,source:fonte,uf,baseDate:mes,type:tipo,createdAt:new Date().toISOString(),compositionCount:comps.length,supplyCount:supplies.size,mode:'sicro_analitico'},compositions:comps,supplies:[...supplies.values()],invalid,warnings:[]};
+ buffer.warnings=analyzeImportBuffer(buffer);
+ renderPrev();
+ return true;
+}
+function parseAnalyticSinapiRows(rows,file){
+ const headerIndex=rows.findIndex(r=>{let h=r.map(x=>norm(String(x||'').replace(/\n+/g,' ')));return h.includes('codigo_da_composicao')&&h.includes('tipo_item')&&h.includes('codigo_do_item')&&h.includes('coeficiente')});
+ if(headerIndex<0)return false;
+ const headers=rows[headerIndex].map(x=>norm(String(x||'').replace(/\n+/g,' ')));
+ const data=rows.slice(headerIndex+1).map(cols=>{let o={};headers.forEach((h,i)=>o[h]=(cols[i]||'').trim());return o});
+ const fonte=impFonte.value||'SINAPI',uf=impUf.value||'SC',mes=impMes.value||new Date().toISOString().slice(0,7),tipo=impTipo.value,nome=impNome.value.trim()||`${fonte} ${uf} Analítico ${mes}`;
+ const supplyByCode=new Map(state.supplies.map(s=>[String(s.code||'').trim(),s]));
+ const compByCode=new Map(state.compositions.map(c=>[String(c.code||'').trim(),c]));
+ const comps=new Map();
+ let current='',invalid=0,missingPrices=0;
+ function ensureComp(code,desc,unit,group){
+   if(!code)return null;
+   if(!comps.has(code)){
+     const existing=compByCode.get(code);
+     comps.set(code,{id:existing?.id||id('comp'),code,description:desc||existing?.description||'Sem descrição',unit:unit||existing?.unit||'',source:fonte,uf,baseDate:mes,type:tipo,note:'Atualizada pela aba Analítico do SINAPI.',libraryId:'',items:[],cost:n(existing?.cost||0),group:group||''});
+   }else{
+     const c=comps.get(code);
+     if(desc&&!c.description)c.description=desc;
+     if(unit&&!c.unit)c.unit=unit;
+   }
+   return comps.get(code);
+ }
+ data.forEach(r=>{
+   const compCode=String(r.codigo_da_composicao||'').trim();
+   const itemType=String(r.tipo_item||'').trim();
+   const itemCode=String(r.codigo_do_item||'').trim();
+   const desc=String(r.descricao||'').trim();
+   const unit=String(r.unidade||'').trim();
+   const coef=n(r.coeficiente);
+   const group=String(r.grupo||'').trim();
+   if(!compCode&&!desc){invalid++;return}
+   if(compCode)current=compCode;
+   const comp=ensureComp(current||compCode,desc,unit,group);
+   if(!comp)return;
+   if(!itemType&&!itemCode)return;
+   const isComp=itemType.toUpperCase().includes('COMPOS');
+   const ref=isComp?compByCode.get(itemCode):supplyByCode.get(itemCode);
+   const price=isComp?n(ref?compCost(ref):0):n(ref?.price||0);
+   if(price===0)missingPrices++;
+   comp.items.push({id:id('item'),supplyId:!isComp&&ref?ref.id:'',code:itemCode,description:desc,category:isComp?'Composição auxiliar':classifyAnalyticItem(itemType,itemCode,desc),unit,coefficient:coef,price,waste:0,situation:String(r.situacao||'').trim()});
+ });
+ const compArr=[...comps.values()].map(c=>{const analyticCost=c.items.reduce((a,i)=>a+itemTotal(i),0);if(analyticCost>0)c.cost=analyticCost;return c});
+ buffer={library:{id:id('lib'),name:nome,source:fonte,uf,baseDate:mes,type:tipo,createdAt:new Date().toISOString(),compositionCount:compArr.length,supplyCount:0,mode:'analitico_sinapi'},compositions:compArr,supplies:[],invalid,warnings:[]};
+ buffer.warnings=analyzeImportBuffer(buffer);
+ if(missingPrices)buffer.warnings.push(missingPrices+' item(ns) analítico(s) ficaram sem preço unitário. Importe também ISD e CSD da mesma base/UF para preencher os preços.');
+ renderPrev();
+ return true;
+}function previewImport(){
+ let file=impFile.files[0];if(!file){alert('Selecione um arquivo CSV, XLS ou XLSX.');return}
+ loadImportRows(file,rows=>{if(rows.length<2){alert('Arquivo sem dados ou sem cabeçalho.');return}
+ if(parseSicroAnalyticRows(rows,file))return;
+ if(parseAnalyticSinapiRows(rows,file))return;
+ let heads=rows[0].map(norm), data=rows.slice(1).map(cols=>{let o={};heads.forEach((h,i)=>o[h]=(cols[i]||'').trim());return o});
+ let fonte=impFonte.value,uf=impUf.value||'SC',mes=impMes.value||new Date().toISOString().slice(0,7),tipo=impTipo.value,nome=impNome.value.trim()||`${fonte} ${uf} ${mes} ${tipo}`;
+ let comps=new Map(), sups=new Map(), invalid=0;
+
+ let fileName=(file.name||'').toLowerCase();
+ let libName=(nome||'').toLowerCase();
+ let headSet=new Set(heads);
+ let hasInsumoHeaders=(headSet.has('classificacao')||headSet.has('categoria')||headSet.has('origem')||headSet.has('origem_de_preco')) && headSet.has('codigo') && headSet.has('descricao') && headSet.has('unidade') && headSet.has('custo');
+ let hasAnalyticHeaders=headSet.has('insumo_codigo')||headSet.has('codigo_insumo')||headSet.has('coeficiente')||headSet.has('coef')||headSet.has('consumo');
+ let isSupplyFile=/\b(isd|icd|ise)\b/.test(fileName) || /\b(isd|icd|ise)\b/.test(libName) || fileName.includes('insumo') || libName.includes('insumo') || (hasInsumoHeaders && !hasAnalyticHeaders);
+
+ if(isSupplyFile){
+   data.forEach(r=>{
+     let code=pick(r,['codigo','código','cod','codigo_do_insumo','código_do_insumo','cod_insumo']);
+     let desc=pick(r,['descricao','descrição','descricao_do_insumo','descrição_do_insumo','insumo']);
+     let unit=pick(r,['unidade','un','und']);
+     let price=n(pick(r,['custo','preco','preço','preco_unitario','preço_unitario','valor','sc']));
+     let cat=pick(r,['classificacao','classificação','categoria','tipo','grupo'])||'Material';
+     let origem=pick(r,['origem','origem_de_preco','origem_do_preco','origem_de_preço']);
+     if(!code&&!desc){invalid++;return}
+     let k=code||desc;
+     if(!sups.has(k)){
+       sups.set(k,{id:id('sup'),code:code||'INS-'+(sups.size+1),description:desc||'Insumo sem descrição',unit,category:cat,price,source:fonte,baseDate:mes,note:'Importado de '+nome+(origem?' | Origem: '+origem:'')});
+     }
+   });
+ }else{
+   data.forEach(r=>{
+     let code=pick(r,['codigo','código','cod','item','composicao_codigo','codigo_composicao']);
+     let desc=pick(r,['descricao','descrição','servico','serviço','composicao','descricao_composicao']);
+     let unit=pick(r,['unidade','un','und']);
+     let cost=n(pick(r,['custo','custo_unitario','preco','preço','preco_unitario','valor','total']));
+     if(!code&&!desc){invalid++;return}
+     let k=code||desc;
+     if(!comps.has(k))comps.set(k,{id:id('comp'),code:code||'SEM-COD',description:desc||'Sem descrição',unit,source:fonte,uf,baseDate:mes,type:tipo,note:'Importado por CSV.',libraryId:'',items:[],cost});
+     let ic=pick(r,['insumo_codigo','codigo_insumo','cod_insumo']);
+     let idc=pick(r,['insumo_descricao','descricao_insumo','insumo']);
+     if(ic||idc){
+       let iu=pick(r,['insumo_unidade','unidade_insumo','un_insumo']);
+       let coef=n(pick(r,['coeficiente','coef','consumo','quantidade_insumo']));
+       let price=n(pick(r,['insumo_preco','preco_insumo','preco_unitario_insumo','preco_unitario','valor_insumo']));
+       let cat=pick(r,['categoria','tipo_insumo','grupo'])||'Material';
+       let sk=ic||idc;
+       if(!sups.has(sk))sups.set(sk,{id:id('sup'),code:ic||'INS',description:idc||'Insumo sem descrição',unit:iu,category:cat,price,source:fonte,baseDate:mes,note:'Importado de '+nome});
+       comps.get(k).items.push({id:id('item'),supplyId:'',code:ic,description:idc,category:cat,unit:iu,coefficient:coef,price,waste:0});
+     }
+   });
+ }
+ let compArr=[...comps.values()].map(c=>{if(c.items.length)c.cost=c.items.reduce((a,i)=>a+itemTotal(i),0);return c});
+ buffer={library:{id:id('lib'),name:nome,source:fonte,uf,baseDate:mes,type:tipo,createdAt:new Date().toISOString(),compositionCount:compArr.length,supplyCount:sups.size,mode:isSupplyFile?'insumos':'composicoes'},compositions:compArr,supplies:[...sups.values()],invalid};
+ buffer.warnings=analyzeImportBuffer(buffer);
+ renderPrev();
+ });
+}
+function renderPrev(){
+ prevCard.style.display='block';
+ const mode=buffer.library.mode||'composicoes';
+ const tipoTxt=mode==='insumos'?'Insumos':(mode==='analitico_individual'?'Analítico individual':(mode==='analitico_sinapi'?'Analítico SINAPI':'Composições'));
+ prevSummary.innerHTML=`<b>${esc(buffer.library.name)}</b><br>Tipo detectado: <b>${tipoTxt}</b><br>Composições: <b>${buffer.compositions.length}</b> | Insumos: <b>${buffer.supplies.length}</b> | Linhas ignoradas: <b>${buffer.invalid}</b>`+(buffer.warnings&&buffer.warnings.length?'<div class="notice warn" style="margin-top:12px"><b>Avisos antes de importar:</b><br>'+buffer.warnings.map(esc).join('<br>')+'</div>':'');
+ if(mode==='insumos'){
+   prevTable.innerHTML='<thead><tr><th>Código</th><th>Descrição</th><th>Categoria</th><th>Un.</th><th class="right">Preço</th><th>Fonte</th></tr></thead><tbody>'+buffer.supplies.slice(0,12).map(s=>`<tr><td>${esc(s.code)}</td><td>${esc(s.description)}</td><td>${esc(s.category)}</td><td>${esc(s.unit)}</td><td class="right strong">${br(s.price)}</td><td><span class="badge src">${esc(s.source)}</span></td></tr>`).join('')+'</tbody>';
+ }else if(mode==='analitico_individual'){
+   const c=buffer.compositions[0];
+   prevTable.innerHTML='<thead><tr><th>Composição</th><th>Item</th><th>Descrição do item</th><th>Un.</th><th class="right">Coef.</th><th class="right">Preço Unit.</th><th class="right">Total</th><th>Categoria</th></tr></thead><tbody>'+c.items.slice(0,20).map(i=>`<tr><td>${esc(c.code)}</td><td>${esc(i.code)}</td><td>${esc(i.description)}</td><td>${esc(i.unit)}</td><td class="right">${fmt(i.coefficient,7)}</td><td class="right">${br(i.price)}</td><td class="right strong">${br(itemTotal(i))}</td><td>${esc(i.category)}</td></tr>`).join('')+'</tbody>';
+ }else{
+   prevTable.innerHTML='<thead><tr><th>Código</th><th>Descrição</th><th>Un.</th><th>Fonte</th><th>UF</th><th class="right">Custo</th><th class="center">Itens</th></tr></thead><tbody>'+buffer.compositions.slice(0,12).map(c=>`<tr><td>${esc(c.code)}</td><td>${esc(c.description)}</td><td>${esc(c.unit)}</td><td><span class="badge src">${esc(c.source)}</span></td><td><span class="badge sc">${esc(c.uf)}</span></td><td class="right strong">${br(c.cost)}</td><td class="center">${c.items.length}</td></tr>`).join('')+'</tbody>';
+ }
+ prevCard.scrollIntoView({behavior:'smooth'});
+}
+function confirmImport(){
+ if(!buffer)return;
+ if(buffer.warnings&&buffer.warnings.length){
+   const ok=confirm('A importacao possui avisos:\n\n- '+buffer.warnings.join('\n- ')+'\n\nDeseja importar mesmo assim?');
+   if(!ok)return;
+ }
+
+ if(buffer.library && buffer.library.mode==='analitico_sinapi'){
+   let lid=buffer.library.id,updated=0,created=0;
+   buffer.compositions.forEach(c=>{
+     c.libraryId=lid;
+     const idx=state.compositions.findIndex(a=>String(a.code||'').trim()===String(c.code||'').trim() && String(a.uf||'SC').trim()===String(c.uf||'SC').trim());
+     if(idx>=0){
+       const old=state.compositions[idx];
+       const newCost=n(c.cost||0)||n(old.cost||0);
+       state.compositions[idx]={...old,description:c.description,unit:c.unit,source:c.source,uf:c.uf,baseDate:c.baseDate,type:c.type,note:'Atualizada pela aba Analítico do SINAPI.',libraryId:lid,items:c.items,cost:newCost};
+       updated++;
+     }else{
+       state.compositions.push(c);
+       created++;
+     }
+   });
+   state.libraries.push(buffer.library);
+   state.settings.activeLibraryId=lid;
+   buffer=null;
+   clearPrev();
+   save();
+   go('composicoes');
+   alert('Analítico SINAPI importado. Composições atualizadas: '+updated+'. Novas: '+created+'.');
+   return;
+ }
+ if(buffer.library && buffer.library.mode==='analitico_individual' && buffer.compositions.length===1){
+   const nova=buffer.compositions[0];
+   const existentes=state.compositions.filter(c=>String(c.code||'').trim()===String(nova.code||'').trim() && String(c.uf||'').trim()===String(nova.uf||'').trim());
+
+   if(existentes.length){
+     const atualizar=confirm(
+       'Já existe composição com o código '+nova.code+' para UF '+nova.uf+'.\n\n'+
+       'OK = Atualizar a composição existente com a versão analítica.\n'+
+       'Cancelar = Criar nova versão analítica separada.'
+     );
+
+     if(atualizar){
+       const alvo=existentes.find(c=>(!c.items||!c.items.length)) || existentes[0];
+       const ok=confirm(
+         'Confirmar atualização da composição existente '+alvo.code+'?\n\n'+
+         'A descrição, custo e itens internos serão substituídos pela versão analítica.'
+       );
+       if(!ok)return;
+
+       alvo.description=nova.description;
+       alvo.unit=nova.unit;
+       alvo.source=nova.source;
+       alvo.uf=nova.uf;
+       alvo.baseDate=nova.baseDate;
+       alvo.type=nova.type;
+       alvo.note='Atualizada com composição analítica individual importada da aba Analítico com Custo.';
+       alvo.items=nova.items;
+       alvo.cost=nova.cost;
+
+       const lib={...buffer.library};
+       lib.name=lib.name+' - atualização';
+       lib.compositionCount=1;
+       lib.supplyCount=0;
+       state.libraries.push(lib);
+       state.settings.activeLibraryId=lib.id;
+
+       buffer=null;
+       clearPrev();
+       save();
+       go('composicoes');
+       alert('Composição existente atualizada com a versão analítica.');
+       return;
+     }else{
+       const criar=confirm('Criar uma nova versão analítica separada para o código '+nova.code+'?');
+       if(!criar)return;
+       nova.note='Nova versão analítica separada. Código já existia na base sintética.';
+     }
+   }
+ }
+
+ let lid=buffer.library.id;
+ buffer.compositions.forEach(c=>c.libraryId=lid);
+ state.libraries.push(buffer.library);
+ state.supplies.push(...buffer.supplies);
+ state.compositions.push(...buffer.compositions);
+ state.settings.activeLibraryId=lid;
+ buffer=null;
+ clearPrev();
+ save();
+ go('bibliotecas');
+ alert('Base importada com sucesso.');
+}
+function clearPrev(){prevCard.style.display='none';prevTable.innerHTML='';prevSummary.innerHTML=''}
+function downloadModelo(){let csv='codigo;descricao;unidade;custo;categoria;insumo_codigo;insumo_descricao;insumo_unidade;coeficiente;preco_unitario\nCOMP-001;Alvenaria de vedação em bloco cerâmico;m²;82,10;Mão de obra;MO-001;Pedreiro;h;0,80;28,00\nCOMP-001;Alvenaria de vedação em bloco cerâmico;m²;82,10;Material;MAT-001;Bloco cerâmico;un;25,00;1,20';download(csv,'modelo_importacao_composicoes.csv','text/csv;charset=utf-8')}
+function renderLibs(){let q=(libQ?.value||'').toLowerCase(),list=state.libraries.filter(l=>JSON.stringify(l).toLowerCase().includes(q));libList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Biblioteca</th><th>Fonte</th><th>UF</th><th>Mês-base</th><th>Tipo</th><th class="center">Composições</th><th>Ações</th></tr></thead><tbody>${list.map(l=>`<tr><td><b>${esc(l.name)}</b> ${state.settings.activeLibraryId===l.id?'<span class="badge sc">Ativa</span>':''}</td><td><span class="badge src">${esc(l.source)}</span></td><td><span class="badge sc">${esc(l.uf)}</span></td><td>${esc(l.baseDate)}</td><td>${esc(l.type)}</td><td class="center">${state.compositions.filter(c=>c.libraryId===l.id).length}</td><td class="action-cell"><div class="action-stack"><button class="btn ok" onclick="state.settings.activeLibraryId='${l.id}';save()">Ativar</button><button class="btn danger" onclick="delLib('${l.id}')">Excluir</button></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma biblioteca importada.</div>'}
+function delLib(x){if(!confirm('Excluir biblioteca e composições vinculadas?'))return;state.libraries=state.libraries.filter(l=>l.id!==x);state.compositions=state.compositions.filter(c=>c.libraryId!==x);if(state.settings.activeLibraryId===x)state.settings.activeLibraryId='';save()}
+
+function renderSupplies(){let q=(insQ?.value||'').toLowerCase(),list=state.supplies.filter(s=>JSON.stringify(s).toLowerCase().includes(q));insList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Código</th><th>Descrição</th><th>Categoria</th><th>Un.</th><th class="right">Preço</th><th>Fonte</th><th>Ações</th></tr></thead><tbody>${list.map(s=>`<tr><td>${esc(s.code)}</td><td>${esc(s.description)}</td><td>${esc(s.category)}</td><td>${esc(s.unit)}</td><td class="right strong">${br(s.price)}</td><td>${esc(s.source)}</td><td class="action-cell"><div class="action-stack"><button class="btn soft" onclick="openSupply('${s.id}')">Editar</button><button class="btn blue" onclick="printSupply('${s.id}')">Imprimir</button><button class="btn danger" onclick="delSupply('${s.id}')">Excluir</button></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhum insumo cadastrado.</div>'}
+function openSupply(x=''){let s=state.supplies.find(a=>a.id===x);supplyTitle.textContent=s?'Editar insumo':'Novo insumo';supId.value=s?.id||'';supCode.value=s?.code||'';supDesc.value=s?.description||'';supUnit.value=s?.unit||'';supCat.value=s?.category||'Material';supPrice.value=s?.price??'';supFonte.value=s?.source||state.settings.fonte;supMes.value=s?.baseDate||new Date().toISOString().slice(0,7);supObs.value=s?.note||'';openM('supplyModal')}
+function saveSupply(){let x=supId.value||id('sup'),s={id:x,code:supCode.value.trim()||'INS-'+(state.supplies.length+1),description:supDesc.value.trim(),unit:supUnit.value.trim(),category:supCat.value,price:n(supPrice.value),source:supFonte.value.trim(),baseDate:supMes.value,note:supObs.value.trim()};if(!s.description){alert('Informe a descrição.');return}let i=state.supplies.findIndex(a=>a.id===x);i>=0?state.supplies[i]=s:state.supplies.push(s);closeM('supplyModal');save()}
+function delSupply(x){if(confirm('Excluir insumo?')){state.supplies=state.supplies.filter(s=>s.id!==x);save()}}
+
+function renderComps(){let q=(compQ?.value||'').toLowerCase(),src=compSrc?.value||'',list=state.compositions.filter(c=>(!src||c.source===src)&&JSON.stringify(c).toLowerCase().includes(q));compList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Código</th><th>Descrição</th><th>Un.</th><th>Fonte</th><th>UF</th><th>Mês</th><th class="right">Custo</th><th class="center">Itens</th><th>Ações</th></tr></thead><tbody>${list.map(c=>`<tr><td>${esc(c.code)}</td><td><b>${esc(c.description)}</b><br><span class="muted small">${esc(c.note||'')}</span></td><td>${esc(c.unit)}</td><td><span class="badge ${c.source==='PROPRIA'?'prop':'src'}">${esc(c.source)}</span></td><td><span class="badge sc">${esc(c.uf||'SC')}</span></td><td>${esc(c.baseDate||'')}</td><td class="right strong">${br(compCost(c))}</td><td class="center">${(c.items||[]).length}</td><td class="action-cell"><div class="action-stack"><button class="btn soft" onclick="openComp('${c.id}')">Ver</button><button class="btn ok" onclick="dupComp('${c.id}')">Duplicar</button><button class="btn blue" onclick="budgetFromComp('${c.id}')">Orçar</button><button class="btn soft" onclick="printComposition('${c.id}')">Imprimir</button><button class="btn danger" onclick="delComp('${c.id}')">Excluir</button></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma composição encontrada.</div>'}
+function fillSelects(){ciSup.innerHTML='<option value="">Selecione ou preencha manualmente</option>'+state.supplies.map(s=>`<option value="${s.id}">${esc(s.code)} - ${esc(s.description)}</option>`).join('')}
+function openComp(x=''){let c=state.compositions.find(a=>a.id===x),nested=typeof budgetModal!=='undefined'&&budgetModal.classList.contains('active');compModal.classList.toggle('nested-comp',nested);compTitle.textContent=c?'Editar composição':'Nova composição';compId.value=c?.id||'';cCode.value=c?.code||'';cDesc.value=c?.description||'';cUnit.value=c?.unit||'';cFonte.value=c?.source||'PROPRIA';cUf.value=c?.uf||state.settings.uf;cMes.value=c?.baseDate||new Date().toISOString().slice(0,7);cTipo.value=c?.type||'Próprio';cObs.value=c?.note||'';compItems=structuredClone(c?.items||[]);compBaseCost=n(c?.cost||0);clearCI();renderCI();openM('compModal')}
+function fillCI(){let s=state.supplies.find(a=>a.id===ciSup.value);if(!s)return;ciDesc.value=s.description;ciCat.value=s.category;ciUnit.value=s.unit;ciPrice.value=s.price}
+function addCI(){let s=state.supplies.find(a=>a.id===ciSup.value),it={id:id('item'),supplyId:s?.id||'',code:s?.code||'',description:ciDesc.value.trim(),category:ciCat.value,unit:ciUnit.value.trim(),coefficient:n(ciCoef.value),price:n(ciPrice.value),waste:n(ciWaste.value)};if(!it.description){alert('Informe a descrição do item.');return}compItems.push(it);clearCI();renderCI()}
+function clearCI(){ciSup.value='';ciDesc.value='';ciCat.value='Material';ciUnit.value='';ciCoef.value='';ciPrice.value='';ciWaste.value=0}
+function updateCI(k,field,value){let it=compItems[k];if(!it)return;if(['coefficient','price','waste'].includes(field))it[field]=n(value);else it[field]=String(value??'').trim();renderCI()}
+function removeCI(k){compItems.splice(k,1);renderCI()}
+function renderCI(){ciTable.innerHTML=compItems.length?`<thead><tr><th>Descrição</th><th>Categoria</th><th>Un.</th><th class="right">Coef.</th><th class="right">Preço</th><th class="right">Perda</th><th class="right">Total</th><th>Ações</th></tr></thead><tbody>${compItems.map((i,k)=>`<tr><td><input value="${esc(i.description)}" onchange="updateCI(${k},'description',this.value)"></td><td><input value="${esc(i.category)}" onchange="updateCI(${k},'category',this.value)"></td><td><input value="${esc(i.unit)}" onchange="updateCI(${k},'unit',this.value)"></td><td><input class="num" value="${fmt(i.coefficient,6)}" onchange="updateCI(${k},'coefficient',this.value)"></td><td><input class="num" value="${fmt(i.price,4)}" onchange="updateCI(${k},'price',this.value)"></td><td><input class="num" value="${fmt(i.waste,2)}" onchange="updateCI(${k},'waste',this.value)"></td><td class="right strong">${br(itemTotal(i))}</td><td><button class="icon-btn" title="Remover item" onclick="removeCI(${k})">×</button></td></tr>`).join('')}</tbody>`:`<tbody><tr><td class="empty">${compBaseCost>0?'Composição sintética importada sem itens analíticos. Para preencher itens e coeficientes, importe o arquivo SINAPI_Referência_2026_03.xlsx pela tela Importar bases. Custo unitário preservado: '+br(compBaseCost):'Nenhum item analítico.'}</td></tr></tbody>`;let mat=0,mo=0,out=0;compItems.forEach(i=>{let t=itemTotal(i),c=String(i.category).toLowerCase();if(c.includes('material'))mat+=t;else if(c.includes('mão')||c.includes('mao'))mo+=t;else out+=t});let total=compItems.length?mat+mo+out:compBaseCost;sumMat.textContent=br(mat);sumMo.textContent=br(mo);sumOut.textContent=br(out);sumTot.textContent=br(total)}
+function saveComp(){let x=compId.value||id('comp'),old=state.compositions.find(a=>a.id===x),c={id:x,code:cCode.value.trim()||'COMP-'+(state.compositions.length+1),description:cDesc.value.trim(),unit:cUnit.value.trim(),source:cFonte.value,uf:cUf.value.trim()||'SC',baseDate:cMes.value,type:cTipo.value,note:cObs.value.trim(),libraryId:old?.libraryId||'',items:structuredClone(compItems),cost:compItems.length?compItems.reduce((a,i)=>a+itemTotal(i),0):n(old?.cost||compBaseCost)};if(!c.description){alert('Informe a descrição.');return}let i=state.compositions.findIndex(a=>a.id===x);i>=0?state.compositions[i]=c:state.compositions.push(c);if(typeof budgetModal!=='undefined'&&budgetModal.classList.contains('active')){(budgetItems||[]).forEach(it=>{if(it.compositionId===x){it.description=c.description;it.unit=c.unit;it.cost=compCost(c)}});renderBI();scheduleBudgetAutosave()}closeM('compModal');save()}
+function dupComp(x){let c=state.compositions.find(a=>a.id===x);if(!c)return;let d=structuredClone(c);d.id=id('comp');d.code=c.code+'-COPIA';d.description=c.description+' - versão própria';d.source='PROPRIA';d.type='Próprio';d.libraryId='';d.note='Duplicada da fonte '+c.source+', código '+c.code;d.items=(d.items||[]).map(i=>({...i,id:id('item')}));state.compositions.push(d);save();openComp(d.id)}
+function delComp(x){if(confirm('Excluir composição?')){state.compositions=state.compositions.filter(c=>c.id!==x);save()}}
+
+function renderBudgets(){let q=(orcQ?.value||'').toLowerCase(),list=state.budgets.filter(b=>JSON.stringify(b).toLowerCase().includes(q));orcList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Orçamento</th><th>Cliente</th><th>Data</th><th>UF</th><th class="center">Itens</th><th class="right">Direto</th><th class="right">Total</th><th>Ações</th></tr></thead><tbody>${list.map(b=>{let t=budgetTotals(b.items);return`<tr><td><b>${esc(b.name)}</b><br><span class="muted small">${esc(b.note||'')}</span></td><td>${esc(b.client||'')}</td><td>${esc(b.date||'')}</td><td><span class="badge sc">${esc(b.uf||'SC')}</span></td><td class="center">${(b.items||[]).length}</td><td class="right strong">${br(t.direct)}</td><td class="right strong">${br(t.total)}</td><td class="action-cell"><div class="action-stack"><button class="btn soft" onclick="viewBudget('${b.id}')">Visualizar</button><button class="btn soft" onclick="openBudget('${b.id}')">Editar</button><button class="btn ok" onclick="exportBudgetXls('${b.id}')">Excel</button><button class="btn blue" onclick="printBudget('${b.id}')">Imprimir</button><button class="btn danger" onclick="delBudget('${b.id}')">Excluir</button></div></td></tr>`}).join('')}</tbody></table></div>`:'<div class="empty">Nenhum orçamento criado.</div>'}
+function compLabel(c){return `${c.code||''} - ${c.description||''} | ${br(compCost(c))}/${c.unit||''}`}
+function renderBudgetLibrarySelect(selected=''){
+ if(typeof bLib==='undefined')return;
+ const value=selected||state.settings.activeLibraryId||'';
+ bLib.innerHTML='<option value="">Todas as bases</option>'+state.libraries.map(l=>`<option value="${l.id}">${esc(l.name)} (${esc(l.source)} ${esc(l.baseDate||'')})</option>`).join('');
+ bLib.value=value;
+ updateBudgetLibraryInfo();
+}
+function updateBudgetLibraryInfo(){
+ if(typeof bLibInfo==='undefined')return;
+ const l=state.libraries.find(x=>x.id===bLib.value);
+ bLibInfo.value=l?`${l.source||''} ${l.uf||''} ${l.baseDate||''} ${l.type||''}`.trim():'Pesquisa em todas as bases';
+}
+function budgetCompositions(){const lid=typeof bLib!=='undefined'?bLib.value:'';return state.compositions.filter(c=>!lid||c.libraryId===lid)}
+function searchBI(){
+ updateBudgetLibraryInfo();
+ const term=norm(biCompSearch.value),words=term.split('_').filter(Boolean);
+ const list=budgetCompositions().filter(c=>{const hay=norm((c.code||'')+' '+(c.description||'')+' '+(c.source||''));return words.every(w=>hay.includes(w))}).slice(0,25);
+ biSuggest.innerHTML=list.length?list.map(c=>`<div class="suggest-item" onclick="selectBI('${c.id}')"><b>${esc(c.code)} - ${esc(c.description)}</b><span>${br(compCost(c))}/${esc(c.unit)} • ${esc(c.source||'')}</span></div>`).join(''):'<div class="suggest-item"><span>Nenhuma composição encontrada.</span></div>';
+ biSuggest.classList.add('active');
+}
+function selectBI(id){let c=state.compositions.find(a=>a.id===id);if(!c)return;biComp.value=id;biCompSearch.value=compLabel(c);biSuggest.classList.remove('active');fillBI()}
+function keyBI(e){if(e.key==='Escape')biSuggest.classList.remove('active');if(e.key==='Enter'){e.preventDefault();let first=biSuggest.querySelector('.suggest-item[onclick]');if(first)first.click()}}
+document.addEventListener('click',e=>{if(typeof biSuggest!=='undefined'&&!e.target.closest('#budgetModal .suggest-wrap'))biSuggest.classList.remove('active')});
+function openBudget(x=''){budgetAutoReady=false;let b=state.budgets.find(a=>a.id===x);budgetTitle.textContent=b?'Editar orçamento':'Novo orçamento';bId.value=b?.id||'';bNome.value=b?.name||'';bCli.value=b?.client||'';bData.value=b?.date||new Date().toISOString().slice(0,10);bUf.value=b?.uf||state.settings.uf;bBdi.value=b?.bdi??state.settings.bdi;bObs.value=b?.note||'';renderBudgetLibrarySelect(b?.libraryId||state.settings.activeLibraryId||'');budgetItems=structuredClone(b?.items||[]);budgetItems.forEach(it=>it.bdi=n(bBdi.value));clearBI();renderBI();if(typeof budgetSaveStatus!=='undefined')budgetSaveStatus.textContent=b?'Salvamento automático ativo':'Informe o nome para ativar autosave';openM('budgetModal');setTimeout(()=>budgetAutoReady=true,80)}
+function budgetFromComp(x){openBudget();selectBI(x);biQtd.value=1}
+function fillBI(){let c=state.compositions.find(a=>a.id===biComp.value);if(!c)return;biDesc.value=c.description;biUnit.value=c.unit;biCost.value=compCost(c).toFixed(4);biBdi.value=bBdi.value||state.settings.bdi}
+function applyBudgetDefaultBdi(){const v=n(bBdi.value);if(typeof biBdi!=='undefined')biBdi.value=bBdi.value||state.settings.bdi;(budgetItems||[]).forEach(it=>it.bdi=v);renderBI();scheduleBudgetAutosave()}
+function addBI(){let current=editingBudgetItem>=0?budgetItems[editingBudgetItem]:null,c=state.compositions.find(a=>a.id===biComp.value),it={id:current?.id||id('bi'),compositionId:c?.id||current?.compositionId||'',group:(biGroup.value||'Sem grupo').trim(),code:c?.code||current?.code||'',description:biDesc.value.trim(),unit:biUnit.value.trim(),quantity:n(biQtd.value),cost:n(biCost.value),bdi:n(bBdi.value||state.settings.bdi)};if(!it.description||it.quantity<=0){alert('Informe descrição e quantidade.');return}if(editingBudgetItem>=0){budgetItems[editingBudgetItem]=it}else{budgetItems.push(it)}clearBI();renderBI();scheduleBudgetAutosave()}
+function editBI(k){let it=budgetItems[k];if(!it)return;editingBudgetItem=k;biGroup.value=it.group||'Sem grupo';biComp.value=it.compositionId||'';biCompSearch.value=it.code?`${it.code} - ${it.description}`:it.description;biDesc.value=it.description||'';biUnit.value=it.unit||'';biQtd.value=it.quantity||'';biCost.value=it.cost||'';biBdi.value=it.bdi??(bBdi.value||state.settings.bdi);if(typeof biAddBtn!=='undefined')biAddBtn.textContent='Salvar item'}
+function renderBudgetGroupOptions(){if(typeof budgetGroups==='undefined')return;let groups=[...new Set((budgetItems||[]).map(i=>(i.group||'Sem grupo').trim()).filter(Boolean))];budgetGroups.innerHTML=groups.map(g=>`<option value="${esc(g)}"></option>`).join('')}
+function clearBI(){let g=typeof biGroup!=='undefined'?biGroup.value:'';editingBudgetItem=-1;biComp.value='';if(typeof biCompSearch!=='undefined')biCompSearch.value='';if(typeof biSuggest!=='undefined')biSuggest.classList.remove('active');if(typeof biGroup!=='undefined')biGroup.value=g;biDesc.value='';biUnit.value='';biQtd.value='';biCost.value='';biBdi.value=bBdi.value||state.settings.bdi;if(typeof biAddBtn!=='undefined')biAddBtn.textContent='Adicionar item'}
+function bItem(it){let d=n(it.quantity)*n(it.cost),bv=d*n(it.bdi)/100;return{direct:d,bdi:bv,total:d+bv}}
+function budgetTotals(items=[]){return items.reduce((a,i)=>{let t=bItem(i);a.direct+=t.direct;a.bdi+=t.bdi;a.total+=t.total;return a},{direct:0,bdi:0,total:0})}
+function budgetEditGroups(){
+ const map=new Map();
+ (budgetItems||[]).forEach((it,index)=>{let name=(it.group||'Sem grupo').trim()||'Sem grupo';if(!map.has(name))map.set(name,[]);map.get(name).push({it,index})});
+ return [...map.entries()].map(([name,rows],idx)=>({name,rows,index:idx+1,total:budgetTotals(rows.map(r=>r.it)).total}));
+}
+function updateBudgetItem(k,field,value){
+ const it=budgetItems[k];if(!it)return;
+ if(['quantity','cost','bdi'].includes(field))it[field]=n(value);else it[field]=String(value??'').trim();
+ renderBI();
+ scheduleBudgetAutosave();
+}
+function updateBudgetGroup(gIndex,value){
+ const g=budgetEditGroups()[gIndex];if(!g)return;
+ const name=(value||'Sem grupo').trim()||'Sem grupo';
+ g.rows.forEach(r=>budgetItems[r.index].group=name);
+ renderBI();
+ scheduleBudgetAutosave();
+}
+function moveBI(k,dir){
+ const to=k+dir;if(to<0||to>=budgetItems.length)return;
+ const item=budgetItems.splice(k,1)[0];budgetItems.splice(to,0,item);renderBI();scheduleBudgetAutosave();
+}
+function removeBI(k){budgetItems.splice(k,1);clearBI();renderBI();scheduleBudgetAutosave()}
+function renderBI(){
+ renderBudgetGroupOptions();
+ if(!budgetItems.length){
+   biTable.innerHTML='<tbody><tr><td class="empty">Nenhum item no orçamento.</td></tr></tbody>';
+ }else{
+   const groups=budgetEditGroups();
+   const body=groups.map((g,gi)=>{
+     const head=`<tr class="sheet-group"><td class="center">${g.index}</td><td></td><td></td><td><input class="desc" value="${esc(g.name)}" onchange="updateBudgetGroup(${gi},this.value)" title="Editar grupo/etapa"></td><td></td><td class="right">1,00</td><td></td><td class="right strong">${br(g.total)}</td><td class="right strong">${br(g.total)}</td><td></td></tr>`;
+     const rows=g.rows.map((r,ri)=>{let i=r.it,k=r.index,t=bItem(i),unitBdi=n(i.cost)*(1+n(i.bdi)/100),hasComp=!!budgetCompositionFromItem(i),codeCell=hasComp?`<button class="code-link" title="Abrir composição de custo" onclick="openBudgetComposition(${k})">${esc(i.code||'')}</button>`:`<input class="code" value="${esc(i.code||'')}" onchange="updateBudgetItem(${k},'code',this.value)">`;return `<tr class="sheet-item"><td class="center">${g.index}.${ri+1}</td><td>${codeCell}</td><td><input class="base" value="${esc(budgetBank(i))}" readonly tabindex="-1"></td><td><input class="desc" value="${esc(i.description||'')}" onchange="updateBudgetItem(${k},'description',this.value)"></td><td><input class="unit" value="${esc(i.unit||'')}" onchange="updateBudgetItem(${k},'unit',this.value)"></td><td><input class="mini" value="${fmt(i.quantity,4)}" onchange="updateBudgetItem(${k},'quantity',this.value)"></td><td><input class="mini" value="${fmt(i.cost,4)}" onchange="updateBudgetItem(${k},'cost',this.value)"></td><td><input class="mini" value="${fmt(unitBdi,2)}" readonly tabindex="-1"></td><td class="right strong">${br(t.total)}</td><td><div class="row-tools"><button class="icon-btn" title="Subir item" onclick="moveBI(${k},-1)">↑</button><button class="icon-btn" title="Descer item" onclick="moveBI(${k},1)">↓</button><button class="icon-btn" title="Editar no formulário" onclick="editBI(${k})">✎</button><button class="icon-btn" title="Remover item" onclick="removeBI(${k})">×</button></div></td></tr>`}).join('');
+     return head+rows;
+   }).join('');
+   const total=budgetTotals(budgetItems).total;
+   biTable.innerHTML=`<thead><tr><th>Item</th><th>Código</th><th>Base</th><th>Descrição</th><th>Und</th><th class="right">Quant.</th><th class="right">Valor Unit</th><th class="right">Valor c/ BDI</th><th class="right">Total</th><th>Ações</th></tr></thead><tbody>${body}<tr class="sheet-total"><td colspan="8">TOTAL</td><td class="right strong">${br(total)}</td><td></td></tr></tbody>`;
+ }
+ let t=budgetTotals(budgetItems);bDireto.textContent=br(t.direct);bBdiTot.textContent=br(t.bdi);bTotal.textContent=br(t.total);bItens.textContent=budgetItems.length;
+}
+function budgetDraft(){
+ const x=bId.value||id('bud');
+ return {
+   id:x,
+   name:(bNome.value||'').trim(),
+   client:(bCli.value||'').trim(),
+   date:bData.value,
+   uf:(bUf.value||state.settings.uf||'SC').trim(),
+   bdi:n(bBdi.value),
+   libraryId:typeof bLib!=='undefined'?bLib.value:'',
+   note:(bObs.value||'').trim(),
+   items:structuredClone(budgetItems||[]),
+   updatedAt:new Date().toISOString()
+ };
+}
+function persistBudgetDraft({silent=false,allowEmpty=true}={}){
+ const b=budgetDraft();
+ if(!b.name){
+   if(!silent){alert('Informe o nome do orçamento.');bNome.focus()}
+   if(typeof budgetSaveStatus!=='undefined')budgetSaveStatus.textContent='Informe o nome para ativar autosave';
+   return null;
+ }
+ if(!allowEmpty&&!b.items.length){
+   const continuar=confirm('O orçamento está sem itens. Deseja salvar mesmo assim?');
+   if(!continuar)return null;
+ }
+ bId.value=b.id;
+ let i=state.budgets.findIndex(a=>a.id===b.id);
+ if(i>=0)state.budgets[i]=b;else state.budgets.push(b);
+ save();
+ if(typeof budgetSaveStatus!=='undefined')budgetSaveStatus.textContent='Salvo automaticamente às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+ return b;
+}
+function scheduleBudgetAutosave(){
+ if(!budgetAutoReady)return;
+ if(typeof budgetSaveStatus!=='undefined')budgetSaveStatus.textContent=(bNome.value||'').trim()?'Salvando...':'Informe o nome para ativar autosave';
+ clearTimeout(budgetAutosaveTimer);
+ budgetAutosaveTimer=setTimeout(()=>persistBudgetDraft({silent:true,allowEmpty:true}),700);
+}
+function viewCurrentBudget(){
+ const b=persistBudgetDraft({silent:false,allowEmpty:true});
+ if(b)viewBudget(b.id);
+}
+function printCurrentBudget(){
+ const b=persistBudgetDraft({silent:false,allowEmpty:true});
+ if(b)printBudget(b.id);
+}
+function saveBudget(){
+ const b=persistBudgetDraft({silent:false,allowEmpty:false});
+ if(!b)return;
+
+ closeM('budgetModal');
+ budgetItems=[];
+ bId.value='';
+ go('orcamentos');
+ alert('Orçamento salvo com sucesso.');
+}
+function delBudget(x){if(confirm('Excluir orçamento?')){state.budgets=state.budgets.filter(b=>b.id!==x);save()}}
+function csvCell(v){return `"${String(v??'').replace(/"/g,'""')}"`}
+function rowsToCsv(rows){return rows.map(r=>r.map(csvCell).join(';')).join('\n')}
+function exportBudget(x){let b=state.budgets.find(a=>a.id===x);if(!b)return;let rows=[['Item','Código','Descrição','Unidade','Quantidade','Custo Unitário','BDI %','Total Direto','Total com BDI']];(b.items||[]).forEach((it,k)=>{let t=bItem(it);rows.push([k+1,it.code,it.description,it.unit,it.quantity,it.cost,it.bdi,t.direct,t.total])});download(rowsToCsv(rows),safe(b.name)+'_orcamento.csv','text/csv;charset=utf-8')}
+function budgetImportComposition(code,bank){
+ const c=String(code||'').trim(),b=String(bank||'').trim().toUpperCase();
+ if(!c)return null;
+ return state.compositions.find(x=>String(x.code||'').trim()===c&&(String(x.source||'').toUpperCase()===b||!b||b==='BANCO'||b==='BASE'||b==='PRÓPRIO'||b==='PROPRIO'))||state.compositions.find(x=>String(x.code||'').trim()===c)||null;
+}
+function budgetImportHeaderMap(row){
+ const keys=row.map(norm),has=k=>keys.some(x=>x.includes(k));
+ if(!(has('descricao')&&(has('codigo')||has('item'))))return null;
+ const find=(arr)=>keys.findIndex(k=>arr.some(a=>k.includes(a)));
+ const costIdx=keys.findIndex(k=>(k.includes('valor_unit')||k.includes('unitario')||k.includes('vl_unit')||k.includes('preco_unit'))&&!k.includes('bdi'));
+ return {
+   item:find(['item']),
+   code:find(['codigo','cod']),
+   bank:find(['banco','base','fonte']),
+   desc:find(['descricao','servico']),
+   unit:find(['und','unidade']),
+   qty:find(['quant','qtd']),
+   cost:costIdx,
+   costBdi:find(['valor_com_bdi','unit_com_bdi','com_bdi']),
+   total:find(['total'])
+ };
+}
+function budgetImportCell(row,i){return i>=0?String(row[i]??'').trim():''}
+function budgetImportItemFromCells(row,map,currentGroup,bdi){
+ const desc=budgetImportCell(row,map.desc),code=budgetImportCell(row,map.code),bank=budgetImportCell(row,map.bank),unit=budgetImportCell(row,map.unit);
+ const itemRef=budgetImportCell(row,map.item),qty=n(budgetImportCell(row,map.qty)),costRaw=n(budgetImportCell(row,map.cost)),costBdi=n(budgetImportCell(row,map.costBdi)),total=n(budgetImportCell(row,map.total));
+ if(desc&&!code&&!unit&&(!qty||String(itemRef).match(/^\d+$/)))return {group:desc};
+ if(!desc||(!code&&!qty&&!total))return null;
+ let cost=costRaw||((costBdi&&bdi>-99)?costBdi/(1+bdi/100):0)||((total&&qty)?total/qty/(1+bdi/100):0);
+ const comp=budgetImportComposition(code,bank);
+ return {item:{id:id('bi'),compositionId:comp?.id||'',group:currentGroup||'Sem grupo',code:code||comp?.code||'',description:desc||comp?.description||'',unit:unit||comp?.unit||'',quantity:qty||1,cost:n(cost||(comp?compCost(comp):0)||0),bdi}};
+}
+function budgetImportItemFromLine(line,currentGroup,bdi){
+ const tokens=String(line||'').replace(/\s+/g,' ').trim().split(' ').filter(Boolean);
+ if(tokens.length<2)return null;
+ const numRe=/^-?\d{1,3}(?:\.\d{3})*(?:,\d+)?$|^-?\d+(?:[,.]\d+)?$/;
+ const nums=[];for(let i=tokens.length-1;i>=0;i--){if(numRe.test(tokens[i]))nums.unshift({i,v:tokens[i]});else if(nums.length)break}
+ const item=tokens[0]||'',code=tokens[1]||'',bank=tokens[2]||'';
+ if(nums.length<3){
+   const txt=tokens.slice(1).join(' ');
+   if(/^\d+$/.test(item)&&txt)return {group:txt};
+   return null;
+ }
+ const firstNum=nums[0].i,unitIdx=firstNum-1;
+ if(unitIdx<3)return null;
+ const desc=tokens.slice(3,unitIdx).join(' '),unit=tokens[unitIdx],qty=n(nums[0].v),costRaw=n(nums[1].v),costBdi=n(nums[2].v),total=n(nums[3]?.v||0);
+ if(!desc)return null;
+ const comp=budgetImportComposition(code,bank);
+ const cost=costRaw||((costBdi&&bdi>-99)?costBdi/(1+bdi/100):0)||((total&&qty)?total/qty/(1+bdi/100):0);
+ return {item:{id:id('bi'),compositionId:comp?.id||'',group:currentGroup||'Sem grupo',code,description:desc,unit,quantity:qty||1,cost,bdi}};
+}
+function budgetFromImportedRows(rows,fileName){
+ const bdi=state.settings.bdi||25,items=[];let group='Sem grupo',map=null,start=0;
+ for(let i=0;i<Math.min(rows.length,40);i++){map=budgetImportHeaderMap(rows[i]||[]);if(map){start=i+1;break}}
+ if(!map){map={item:0,code:1,bank:2,desc:3,unit:4,qty:5,cost:6,costBdi:7,total:8};start=0}
+ rows.slice(start).forEach(row=>{
+   if(!row||!row.some(c=>String(c??'').trim()))return;
+   let parsed=row.length>1?budgetImportItemFromCells(row,map,group,bdi):budgetImportItemFromLine(row[0],group,bdi);
+   if(!parsed&&row.length>1)parsed=budgetImportItemFromLine(row.join(' '),group,bdi);
+   if(parsed?.group){group=parsed.group;return}
+   if(parsed?.item)items.push(parsed.item);
+ });
+ if(!items.length)throw new Error('Não encontrei itens de orçamento no arquivo. Verifique se há colunas Item, Código, Base/Banco, Descrição, Und, Quant., Valor Unit e Total.');
+ const name=String(fileName||'Orçamento importado').replace(/\.(xlsx?|csv|pdf)$/i,'');
+ return {id:id('bud'),name,client:'',date:new Date().toISOString().slice(0,10),uf:state.settings.uf||'SC',bdi,libraryId:state.settings.activeLibraryId||'',note:'Importado de '+fileName,items,updatedAt:new Date().toISOString()};
+}
+function importBudgetWorkbook(file,buf){
+ if(typeof XLSX==='undefined')throw new Error('Biblioteca XLSX não carregou.');
+ const wb=XLSX.read(new Uint8Array(buf),{type:'array'});
+ const sh=wb.Sheets[wb.SheetNames[0]];
+ return XLSX.utils.sheet_to_json(sh,{header:1,raw:false,defval:''});
+}
+async function importBudgetPdf(file,buf){
+ if(!window.pdfjsLib)throw new Error('Leitor PDF ainda não carregou. Aguarde alguns segundos e tente novamente.');
+ const pdf=await window.pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise,rows=[];
+ for(let p=1;p<=pdf.numPages;p++){
+   const page=await pdf.getPage(p),txt=await page.getTextContent(),lines=new Map();
+   txt.items.forEach(it=>{const y=Math.round(it.transform[5]);if(!lines.has(y))lines.set(y,[]);lines.get(y).push({x:it.transform[4],s:it.str})});
+   [...lines.entries()].sort((a,b)=>b[0]-a[0]).forEach(([,parts])=>rows.push([parts.sort((a,b)=>a.x-b.x).map(x=>x.s).join(' ').trim()]));
+ }
+ return rows;
+}
+async function importBudgetFile(file){
+ if(!file)return;
+ try{
+   const buf=await file.arrayBuffer();
+   const ext=file.name.toLowerCase().split('.').pop();
+   let rows;
+   if(ext==='pdf')rows=await importBudgetPdf(file,buf);
+   else rows=importBudgetWorkbook(file,buf);
+   const b=budgetFromImportedRows(rows,file.name);
+   state.budgets.push(b);save();openBudget(b.id);
+   alert(`Orçamento importado com ${b.items.length} item(ns). Confira os grupos, quantidades e valores antes de finalizar.`);
+ }catch(e){alert('Não foi possível importar o orçamento.\n\nDetalhe: '+(e?.message||e))}
+}
+function budgetBank(it){
+ const c=state.compositions.find(x=>x.id===it.compositionId);
+ if(c?.source)return c.source;
+ const l=state.libraries.find(x=>x.id===c?.libraryId);
+ return l?.source||'Próprio';
+}
+function budgetCompositionFromItem(it){
+ if(!it)return null;
+ let c=state.compositions.find(x=>x.id===it.compositionId);
+ if(c)return c;
+ const code=String(it.code||'').trim();
+ if(!code)return null;
+ const bank=String(budgetBank(it)||'').toUpperCase();
+ return state.compositions.find(x=>String(x.code||'').trim()===code&&(bank==='PRÓPRIO'||bank==='PROPRIO'||!bank||String(x.source||'').toUpperCase()===bank))||state.compositions.find(x=>String(x.code||'').trim()===code);
+}
+function openBudgetComposition(k){
+ const it=budgetItems[k],c=budgetCompositionFromItem(it);
+ if(!c){alert('Composição não encontrada para este código.');return}
+ viewComposition(c.id);
+}
+function budgetGroupsData(b){
+ const map=new Map();
+ (b.items||[]).forEach(it=>{let g=(it.group||'Sem grupo').trim()||'Sem grupo';if(!map.has(g))map.set(g,[]);map.get(g).push(it)});
+ return [...map.entries()].map(([name,items],idx)=>({name,items,index:idx+1,total:budgetTotals(items).total}));
+}
+function moneyCell(v){return n(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function qtyCell(v){return n(v).toLocaleString('pt-BR',{maximumFractionDigits:4})}
+function budgetTableStandard(b,forXls=false){
+ const groups=budgetGroupsData(b),total=budgetTotals(b.items||[]).total;
+ const td=(v,cls='')=>`<td class="${cls}">${v}</td>`;
+ const body=groups.map(g=>{
+   const head=`<tr class="budget-group">${td(g.index,'center')}${td('')}${td('')}${td(esc(g.name),'strong')}${td('')}${td('1,00','right')}${td('')}${td(moneyCell(g.total),'right strong')}${td(moneyCell(g.total),'right strong')}</tr>`;
+   const items=g.items.map((it,k)=>{let x=bItem(it),unitBdi=n(it.cost)*(1+n(it.bdi)/100);return `<tr class="budget-item">${td(`${g.index}.${k+1}`,'center')}${td(esc(it.code||''))}${td(esc(budgetBank(it)))}${td(esc(it.description||''))}${td(esc(it.unit||''),'center')}${td(qtyCell(it.quantity),'right')}${td(moneyCell(it.cost),'right')}${td(moneyCell(unitBdi),'right')}${td(moneyCell(x.total),'right strong')}</tr>`}).join('');
+   return head+items;
+ }).join('');
+ return `<table class="budget-model"><colgroup><col style="width:62px"><col style="width:115px"><col style="width:105px"><col style="width:560px"><col style="width:65px"><col style="width:70px"><col style="width:90px"><col style="width:105px"><col style="width:105px"></colgroup><thead><tr><th>Item</th><th>Código</th><th>Base</th><th>Descrição</th><th>Und</th><th>Quant.</th><th>Valor Unit</th><th>Valor c/ BDI</th><th>Total</th></tr></thead><tbody>${body}<tr class="budget-total"><td colspan="8">TOTAL</td><td class="right strong">${moneyCell(total)}</td></tr></tbody></table>`;
+}
+function exportBudgetXls(id){
+ const b=state.budgets.find(a=>a.id===id);if(!b){alert('Orçamento não encontrado.');return}
+ if(typeof XLSX==='undefined'){alert('A biblioteca XLSX não carregou. Tente novamente com internet ativa.');return}
+ const rows=[
+   [b.name||'Orçamento'],
+   [`Cliente/Órgão: ${b.client||'-'} | Data: ${b.date||'-'} | UF: ${b.uf||'-'} | BDI da obra: ${fmt(b.bdi,2)}%`],
+   [],
+   ['Item','Código','Base','Descrição','Und','Quant.','Valor Unit','Valor c/ BDI','Total']
+ ];
+ budgetGroupsData(b).forEach(g=>{
+   rows.push([g.index,'','',g.name,'',1,'',n(g.total),n(g.total)]);
+   g.items.forEach((it,k)=>{
+     const x=bItem(it),unitBdi=n(it.cost)*(1+n(it.bdi)/100);
+     rows.push([`${g.index}.${k+1}`,it.code||'',budgetBank(it),it.description||'',it.unit||'',n(it.quantity),n(it.cost),n(unitBdi),n(x.total)]);
+   });
+ });
+ rows.push(['TOTAL','','','','','','','',n(budgetTotals(b.items||[]).total)]);
+ const ws=XLSX.utils.aoa_to_sheet(rows);
+ ws['!cols']=[{wch:8},{wch:14},{wch:12},{wch:72},{wch:9},{wch:12},{wch:14},{wch:16},{wch:16}];
+ ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:8}},{s:{r:1,c:0},e:{r:1,c:8}}];
+ const range=XLSX.utils.decode_range(ws['!ref']);
+ for(let r=0;r<=range.e.r;r++){
+   for(let c=0;c<=range.e.c;c++){
+     const cell=ws[XLSX.utils.encode_cell({r,c})];
+     if(!cell)continue;
+     if(r===0)cell.s={font:{bold:true,sz:14}};
+     if(r===3)cell.s={font:{bold:true},alignment:{horizontal:'center'}};
+     if(cell.t==='n'){
+       if(c===5)cell.z='#,##0.0000';
+       if(c>=6)cell.z='#,##0.00';
+     }
+   }
+ }
+ const wb=XLSX.utils.book_new();
+ XLSX.utils.book_append_sheet(wb,ws,'Orçamento');
+ XLSX.writeFile(wb,safe(b.name)+'_orcamento_padrao.xlsx');
+}
+function exportBudgetsCsv(){
+ if(!state.budgets.length){alert('Nenhum orçamento para exportar.');return}
+ let rows=[['Orçamento','Cliente/Órgão','Data','UF','BDI da obra %','Observações','Item','Código composição','Descrição','Unidade','Quantidade','Custo unitário','BDI item %','Total direto','Total com BDI']];
+ state.budgets.forEach(b=>(b.items||[]).forEach((it,k)=>{let t=bItem(it);rows.push([b.name,b.client,b.date,b.uf,b.bdi,b.note,k+1,it.code,it.description,it.unit,it.quantity,it.cost,it.bdi,t.direct,t.total])}));
+ download(rowsToCsv(rows),'orcamentos_orcc_'+new Date().toISOString().slice(0,10)+'.csv','text/csv;charset=utf-8');
+}
+function exportCompositionsCsv(){
+ if(!state.compositions.length){alert('Nenhuma composição para exportar.');return}
+ let rows=[['Código composição','Descrição composição','Unidade composição','Fonte','UF','Mês-base','Tipo','Custo composição','Qtd itens','Item','Código item','Descrição item','Categoria','Unidade item','Coeficiente','Preço unitário','Perda %','Total item','Observações']];
+ state.compositions.forEach(c=>{
+   if(c.items&&c.items.length){
+     c.items.forEach((it,k)=>rows.push([c.code,c.description,c.unit,c.source,c.uf,c.baseDate,c.type,compCost(c),c.items.length,k+1,it.code,it.description,it.category,it.unit,it.coefficient,it.price,it.waste,itemTotal(it),c.note]));
+   }else{
+     rows.push([c.code,c.description,c.unit,c.source,c.uf,c.baseDate,c.type,compCost(c),0,'','','','','','','','','',c.note]);
+   }
+ });
+ download(rowsToCsv(rows),'composicoes_orcc_'+new Date().toISOString().slice(0,10)+'.csv','text/csv;charset=utf-8');
+}
+function exportSuppliesCsv(){
+ if(!state.supplies.length){alert('Nenhum insumo para exportar.');return}
+ let rows=[['Código','Descrição','Categoria','Unidade','Preço','Fonte','Mês-base','Observações']];
+ state.supplies.forEach(s=>rows.push([s.code,s.description,s.category,s.unit,s.price,s.source,s.baseDate,s.note]));
+ download(rowsToCsv(rows),'insumos_orcc_'+new Date().toISOString().slice(0,10)+'.csv','text/csv;charset=utf-8');
+}
+function companyPrintHeader(){
+ const c=company();
+ const info=[c.doc,c.phone,c.email,c.address,c.notes].filter(Boolean).map(esc).join(' • ');
+ const logo=c.logo?`<img class="brand-logo" src="${c.logo}" alt="Logotipo">`:'';
+ return `<div class="brand">${logo}<div><div class="brand-name">${esc(c.name||'ORCC-SC')}</div>${info?`<div class="brand-info">${info}</div>`:''}</div></div>`;
+}
+function printHtml(title,body){
+ let w=window.open('','_blank');
+ if(!w){alert('Permita pop-ups para imprimir.');return}
+ w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc(title)}</title><style>
+ body{font-family:Arial,Helvetica,sans-serif;color:#111827;margin:24px;font-size:12px}h1{font-size:22px;margin:0 0 4px}h2{font-size:16px;margin:22px 0 8px}.brand{display:flex;align-items:center;gap:14px;border-bottom:2px solid #111827;padding-bottom:12px;margin-bottom:14px}.brand-logo{max-width:150px;max-height:70px;object-fit:contain}.brand-name{font-size:18px;font-weight:800}.brand-info{color:#475569;margin-top:4px;line-height:1.4}.meta{color:#475569;margin-bottom:16px}.section{page-break-inside:avoid;margin-bottom:18px}table{width:100%;border-collapse:collapse;margin-top:8px}th,td{border:1px solid #cbd5e1;padding:6px;text-align:left;vertical-align:top}th{background:#e2e8f0;font-size:10px;text-transform:uppercase}.right{text-align:right}.center{text-align:center}.strong{font-weight:700}.total{font-weight:700;background:#f8fafc}.small{font-size:11px;color:#475569}.budget-model th{background:#6f6f6f;color:#fff;text-align:center}.budget-model td{font-size:11px}.budget-group td{background:#bdd7ee;font-weight:700}.budget-item td{background:#e2f0d9}.budget-total td{background:#d9eaf7;font-weight:700}@media print{body{margin:12mm}.no-print{display:none}.section{break-inside:avoid}thead{display:table-header-group}}
+ </style></head><body><button class="no-print" onclick="window.print()" style="float:right;padding:8px 12px">Imprimir</button>${companyPrintHeader()}<h1>${esc(title)}</h1><div class="meta">ORCC-SC • ${new Date().toLocaleString('pt-BR')}</div>${body}</body></html>`);
+ w.document.close();
+ w.focus();
+ setTimeout(()=>w.print(),300);
+}
+function budgetPrintBody(b){
+ let t=budgetTotals(b.items||[]);
+ return `<div class="section"><h2>${esc(b.name)}</h2><div class="small">Cliente/Órgão: ${esc(b.client||'-')} • Data: ${esc(b.date||'-')} • UF: ${esc(b.uf||'-')} • BDI da obra: ${fmt(b.bdi,2)}%</div>${budgetTableStandard(b)}</div>`;
+}
+function viewBudget(id){
+ let b=state.budgets.find(x=>x.id===id);if(!b){alert('Orçamento não encontrado.');return}
+ const title=document.getElementById('budgetViewTitle'),body=document.getElementById('budgetViewBody');
+ const edit=document.getElementById('budgetViewEdit'),excel=document.getElementById('budgetViewExcel'),print=document.getElementById('budgetViewPrint');
+ title.textContent=b.name||'Visualizar orçamento';
+ body.innerHTML=budgetPrintBody(b);
+ edit.onclick=()=>{closeM('budgetViewModal');openBudget(id)};
+ excel.onclick=()=>exportBudgetXls(id);
+ print.onclick=()=>printBudget(id);
+ openM('budgetViewModal');
+}
+function printBudget(id){
+ let b=state.budgets.find(x=>x.id===id);if(!b){alert('Orçamento não encontrado.');return}
+ printHtml('Orçamento - '+b.name,budgetPrintBody(b));
+}
+function printBudgets(){
+ if(!state.budgets.length){alert('Nenhum orçamento para imprimir.');return}
+ printHtml('Orçamentos',state.budgets.map(budgetPrintBody).join(''));
+}
+function compositionPrintBody(c){
+ return `<div class="section"><h2>${esc(c.code)} - ${esc(c.description)}</h2><div class="small">Unidade: ${esc(c.unit)} • Fonte: ${esc(c.source)} • UF: ${esc(c.uf)} • Custo: ${br(compCost(c))} • Itens: ${(c.items||[]).length}</div><table><thead><tr><th>Item</th><th>Código</th><th>Descrição</th><th>Categoria</th><th>Un.</th><th class="right">Coef.</th><th class="right">Preço</th><th class="right">Total</th></tr></thead><tbody>${(c.items&&c.items.length?c.items.map((it,k)=>`<tr><td>${k+1}</td><td>${esc(it.code)}</td><td>${esc(it.description)}</td><td>${esc(it.category)}</td><td>${esc(it.unit)}</td><td class="right">${fmt(it.coefficient,6)}</td><td class="right">${br(it.price)}</td><td class="right">${br(itemTotal(it))}</td></tr>`).join(''):'<tr><td colspan="8">Composição sintética sem itens analíticos.</td></tr>')}</tbody></table></div>`;
+}
+function viewComposition(id){
+ let c=state.compositions.find(x=>x.id===id);if(!c){alert('Composição não encontrada.');return}
+ compositionViewTitle.textContent=`${c.code} - ${c.description}`;
+ compositionViewBody.innerHTML=compositionPrintBody(c);
+ compositionViewEdit.onclick=()=>{closeM('compositionViewModal');openComp(id)};
+ compositionViewPrint.onclick=()=>printComposition(id);
+ openM('compositionViewModal');
+}
+function printComposition(id){
+ let c=state.compositions.find(x=>x.id===id);if(!c){alert('Composição não encontrada.');return}
+ printHtml('Composição - '+c.code,compositionPrintBody(c));
+}
+function printCompositions(){
+ if(!state.compositions.length){alert('Nenhuma composição para imprimir.');return}
+ let list=state.compositions.slice(0,300),body=list.map(compositionPrintBody).join('');
+ if(state.compositions.length>list.length)body+=`<p class="small">Relatório limitado às primeiras ${list.length} composições para evitar travamento do navegador.</p>`;
+ printHtml('Composições',body);
+}
+function supplyRows(list){return `<table><thead><tr><th>Código</th><th>Descrição</th><th>Categoria</th><th>Un.</th><th class="right">Preço</th><th>Fonte</th><th>Mês-base</th></tr></thead><tbody>${list.map(s=>`<tr><td>${esc(s.code)}</td><td>${esc(s.description)}</td><td>${esc(s.category)}</td><td>${esc(s.unit)}</td><td class="right">${br(s.price)}</td><td>${esc(s.source)}</td><td>${esc(s.baseDate)}</td></tr>`).join('')}</tbody></table>`}
+function printSupply(id){
+ let s=state.supplies.find(x=>x.id===id);if(!s){alert('Insumo não encontrado.');return}
+ printHtml('Insumo - '+s.code,supplyRows([s]));
+}
+function printSupplies(){
+ if(!state.supplies.length){alert('Nenhum insumo para imprimir.');return}
+ let list=state.supplies.slice(0,1000),body=supplyRows(list);
+ if(state.supplies.length>list.length)body+=`<p class="small">Relatório limitado aos primeiros ${list.length} insumos para evitar travamento do navegador.</p>`;
+ printHtml('Insumos',body);
+}
+
+function openM(x){document.getElementById(x).classList.add('active')}function closeM(x){document.getElementById(x).classList.remove('active')}
+function download(c,name,type){let blob=new Blob([c],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
+function safe(s){return String(s||'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_')}
+function exportBackup(){download(JSON.stringify(state,null,2),'backup_composicoes_obras_'+new Date().toISOString().slice(0,10)+'.json','application/json')}
+function importBackup(){let f=backupFile.files[0];if(!f){alert('Selecione JSON.');return}if(!confirm('Substituir dados atuais pelo backup?'))return;let r=new FileReader();r.onload=e=>{try{state=Object.assign(base(),JSON.parse(e.target.result));save();alert('Backup importado.')}catch(err){alert('Arquivo inválido.')}};r.readAsText(f)}
+function demo(){if(!confirm('Adicionar dados de exemplo?'))return;let lib={id:id('lib'),name:'Exemplo SINAPI SC 05-2026 Não Desonerado',source:'SINAPI',uf:'SC',baseDate:'2026-05',type:'Não desonerado',compositionCount:2,supplyCount:4};let s=[{id:id('sup'),code:'MO-001',description:'Pedreiro',unit:'h',category:'Mão de obra',price:28,source:'Exemplo',baseDate:'2026-05',note:''},{id:id('sup'),code:'MO-002',description:'Servente',unit:'h',category:'Mão de obra',price:18,source:'Exemplo',baseDate:'2026-05',note:''},{id:id('sup'),code:'MAT-001',description:'Bloco cerâmico',unit:'un',category:'Material',price:1.2,source:'Exemplo',baseDate:'2026-05',note:''},{id:id('sup'),code:'MAT-002',description:'Tinta acrílica',unit:'l',category:'Material',price:32,source:'Exemplo',baseDate:'2026-05',note:''}];let a=s[0],b=s[1],c=s[2],d=s[3];let comps=[mk(lib.id,'87503','Alvenaria de vedação em bloco cerâmico','m²',[[a,.8,0],[b,.9,0],[c,25,5]]),mk(lib.id,'88489','Pintura acrílica em parede','m²',[[b,.2,0],[d,.18,10]])];state.libraries.push(lib);state.supplies.push(...s);state.compositions.push(...comps);state.settings.activeLibraryId=lib.id;save()}
+function mk(lid,code,desc,unit,arr){let items=arr.map(([s,coef,w])=>({id:id('item'),supplyId:s.id,code:s.code,description:s.description,category:s.category,unit:s.unit,coefficient:coef,price:s.price,waste:w}));return{id:id('comp'),code,description:desc,unit,source:'SINAPI',uf:'SC',baseDate:'2026-05',type:'Não desonerado',note:'Composição exemplo.',libraryId:lid,items,cost:items.reduce((a,i)=>a+itemTotal(i),0)}}
+function clearAll(){if(confirm('Apagar todos os dados?')){state=base();localStorage.removeItem(KEY);save()}}
+loadFromDb();
+impMes.value=new Date().toISOString().slice(0,7);supMes.value=new Date().toISOString().slice(0,7);cMes.value=new Date().toISOString().slice(0,7);if(typeof ofMes!=='undefined')ofMes.value=new Date().toISOString().slice(0,7);if(typeof anMes!=='undefined')anMes.value=new Date().toISOString().slice(0,7);
+function updateImpName(){if(!impNome.value)impNome.value=`${impFonte.value} ${impUf.value} ${impMes.value||new Date().toISOString().slice(0,7)} ${impTipo.value}`}
+['impFonte','impUf','impMes','impTipo'].forEach(x=>document.getElementById(x).addEventListener('change',updateImpName));updateImpName();render();
+</script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+

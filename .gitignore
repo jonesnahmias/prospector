@@ -1,0 +1,20 @@
+# Local Netlify folder
+.netlify
+
+# Bases oficiais, backups e arquivos gerados localmente
+*.zip
+*.7z
+*.json
+*.xlsx
+*.xls
+*.csv
+*.pdf
+*.ORSE
+sc-01-2026/
+SINAPI-2026-03-formato-xlsx/
+
+# Exceções: código-fonte e configuração do app
+!index.html
+!netlify/
+!netlify/functions/
+!netlify/functions/*.mts
