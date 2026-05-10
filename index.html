@@ -1352,6 +1352,30 @@ function budgetImportHeaderMap(rows,rowIndex){
  return hasMain&&hasNumbers?map:null;
 }
 function budgetImportCell(row,i){return i>=0?String(row[i]??'').trim():''}
+function budgetImportIsNumber(v){return String(v??'').trim()!==''&&!isNaN(n(v))}
+function budgetImportLooksUnit(v){return /^[A-Za-zÀ-ÿ²³\/]{1,8}$/.test(String(v??'').trim())}
+function budgetImportRoleStats(rows,start,map){
+ const sample=rows.slice(start,start+80).filter(r=>r&&r.some(c=>String(c??'').trim())).slice(0,40);
+ const stats={};
+ ['unit','qty','cost','costBdi','total'].forEach(f=>{
+   const idx=map[f];let non=0,num=0,unit=0;
+   sample.forEach(r=>{const v=budgetImportCell(r,idx);if(!v)return;non++;if(budgetImportIsNumber(v))num++;if(budgetImportLooksUnit(v))unit++});
+   stats[f]={non,num,unit,numRate:non?num/non:0,unitRate:non?unit/non:0};
+ });
+ return stats;
+}
+function budgetRefineHeaderMap(rows,start,map){
+ const m={...map},s=budgetImportRoleStats(rows,start,m);
+ const swap=(a,b)=>{const t=m[a];m[a]=m[b];m[b]=t};
+ if(m.unit>=0&&m.qty>=0&&s.unit.numRate>.7&&s.qty.unitRate>.5)swap('unit','qty');
+ if(m.qty>=0&&m.cost>=0&&s.qty.numRate>.7&&s.cost.numRate>.7){
+   const qVals=rows.slice(start,start+40).map(r=>n(budgetImportCell(r,m.qty))).filter(Boolean);
+   const cVals=rows.slice(start,start+40).map(r=>n(budgetImportCell(r,m.cost))).filter(Boolean);
+   const qMed=qVals.sort((a,b)=>a-b)[Math.floor(qVals.length/2)]||0,cMed=cVals.sort((a,b)=>a-b)[Math.floor(cVals.length/2)]||0;
+   if(qMed>1000&&cMed>0&&cMed<1000)swap('qty','cost');
+ }
+ return m;
+}
 function budgetImportItemFromCells(row,map,currentGroup,bdi){
  const desc=budgetImportCell(row,map.desc),code=budgetImportCell(row,map.code),bank=budgetImportCell(row,map.bank),unit=budgetImportCell(row,map.unit);
  const itemRef=budgetImportCell(row,map.item),qty=n(budgetImportCell(row,map.qty)),costRaw=n(budgetImportCell(row,map.cost)),costBdi=n(budgetImportCell(row,map.costBdi)),total=n(budgetImportCell(row,map.total));
@@ -1384,7 +1408,8 @@ function budgetImportItemFromLine(line,currentGroup,bdi){
 function budgetFromImportedRows(rows,fileName){
  const bdi=state.settings.bdi||25,items=[];let group='Sem grupo',map=null,start=0;
  for(let i=0;i<Math.min(rows.length,40);i++){map=budgetImportHeaderMap(rows,i);if(map){start=i+1;break}}
- if(!map){map={item:0,code:1,bank:2,desc:3,unit:4,qty:5,cost:6,costBdi:7,total:8};start=0}
+ if(!map)throw new Error('Não encontrei o cabeçalho do orçamento. A planilha precisa ter nomes de colunas como Item, Código, Base/Banco, Descrição, Und, Quant., Valor Unit e Total.');
+ map=budgetRefineHeaderMap(rows,start,map);
  rows.slice(start).forEach(row=>{
    if(!row||!row.some(c=>String(c??'').trim()))return;
    let parsed=row.length>1?budgetImportItemFromCells(row,map,group,bdi):budgetImportItemFromLine(row[0],group,bdi);
