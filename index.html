@@ -182,7 +182,7 @@
           <div class="notice warn">Importe CSV, TXT, XLS ou XLSX. Para arquivos Excel, o app lê a primeira planilha com dados.</div>
           <div class="form">
             <div><label>Fonte</label><select id="impFonte"><option>SINAPI</option><option>SICRO</option><option>ORSE</option><option>SEINFRA</option><option>CPOS</option><option>PROPRIA</option></select></div>
-            <div><label>UF</label><select id="impUf"><option value="SC">SC - Santa Catarina</option><option>RS</option><option>PR</option><option>SP</option><option>MG</option><option>RJ</option><option>OUTRA</option></select></div>
+            <div><label>UF</label><select id="impUf"><option value="SC">SC - Santa Catarina</option><option value="SE">SE - Sergipe</option><option>RS</option><option>PR</option><option>SP</option><option>MG</option><option>RJ</option><option>OUTRA</option></select></div>
             <div><label>Mês-base</label><input type="month" id="impMes"></div>
             <div><label>Tipo</label><select id="impTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option><option>Próprio</option></select></div>
             <div class="span2"><label>Nome da biblioteca</label><input id="impNome" placeholder="Ex.: SINAPI SC 05-2026 Não Desonerado"></div>
@@ -200,7 +200,7 @@
 
           <div class="form">
             <div><label>Base oficial</label><select id="ofFonte"><option value="SINAPI">SINAPI</option><option value="SICRO">SICRO</option><option value="ORSE">ORSE</option><option value="SEINFRA">SEINFRA</option><option value="CPOS">CPOS</option></select></div>
-            <div><label>UF padrão</label><select id="ofUf"><option value="SC">SC - Santa Catarina</option><option value="RS">RS</option><option value="PR">PR</option><option value="SP">SP</option><option value="MG">MG</option><option value="RJ">RJ</option><option value="OUTRA">Outra</option></select></div>
+            <div><label>UF padrão</label><select id="ofUf"><option value="SC">SC - Santa Catarina</option><option value="SE">SE - Sergipe</option><option value="RS">RS</option><option value="PR">PR</option><option value="SP">SP</option><option value="MG">MG</option><option value="RJ">RJ</option><option value="OUTRA">Outra</option></select></div>
             <div><label>Mês-base</label><input type="month" id="ofMes"></div>
             <div><label>Tipo</label><select id="ofTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option></select></div>
             <div class="span2"><label>Termo ORSE</label><input id="ofTermo" placeholder="Ex.: concreto, pintura, telha"></div>
@@ -492,15 +492,16 @@ function prepareOfficialDownload(fonte){
   setImportMode('official');
   if(fonte && fonte !== 'ATUALIZAR' && fonte !== 'ORSE') ofFonte.value = fonte;
   if(fonte === 'ORSE') ofFonte.value = 'ORSE';
-  ofUf.value = state.settings.uf || 'SC';
+  ofUf.value = fonte === 'ORSE' ? 'SE' : (state.settings.uf || 'SC');
   if(!ofMes.value) ofMes.value = new Date().toISOString().slice(0,7);
-  ofTipo.value = state.settings.tipo || 'Não desonerado';
+  ofTipo.value = fonte === 'ORSE' ? 'Referencial' : (state.settings.tipo || 'Não desonerado');
+  if(fonte === 'ORSE' && (!ofTermo.value || norm(ofTermo.value)==='orse')) ofTermo.value = '';
   const fonteTxt = fonte === 'ATUALIZAR' ? 'Atualização da base ativa' : ofFonte.value + '/' + ofUf.value;
   officialResult.style.display = 'block';
   officialResult.innerHTML = `
     <b>Solicitação preparada:</b> ${fonteTxt}<br>
     <b>Mês-base:</b> ${ofMes.value || 'mês atual'} | <b>Tipo:</b> ${ofTipo.value}<br><br>
-    Clique em <b>Buscar e importar automaticamente</b>. Se a base já estiver disponível no projeto, o app baixa, lê e mostra a prévia para confirmação.
+    Para ORSE, digite uma palavra do serviço em <b>Termo ORSE</b>, por exemplo: concreto, pintura, telha, piso, argamassa. Depois clique em <b>Buscar e importar automaticamente</b>.
   `;
 }
 function importRowsFromOfficial(rows,fileName,meta={}){
@@ -519,6 +520,15 @@ function importRowsFromOfficial(rows,fileName,meta={}){
  alert('A base foi baixada, mas o formato ainda não é reconhecido automaticamente. Use o upload manual ou converta para CSV modelo.');
 }
 async function downloadOfficialBase(){
+ if(ofFonte.value==='ORSE'){
+   const termo=norm(ofTermo.value);
+   if(!termo || termo==='orse' || termo.length<3){
+     officialResult.style.display='block';
+     officialResult.innerHTML='<b>Informe um termo ORSE válido.</b><br>Não use “ORSE” como termo. Use uma palavra da composição, como <b>concreto</b>, <b>pintura</b>, <b>telha</b>, <b>piso</b> ou <b>argamassa</b>.';
+     ofTermo.focus();
+     return;
+   }
+ }
  const params=new URLSearchParams({fonte:ofFonte.value,uf:ofUf.value,mes:ofMes.value,tipo:ofTipo.value,termo:ofTermo.value,paginas:ofPaginas.value,itens:ofItens.value});
  officialResult.style.display='block';
  officialResult.innerHTML='<b>Buscando base...</b>';

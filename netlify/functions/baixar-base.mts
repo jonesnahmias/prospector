@@ -139,7 +139,17 @@ async function buscarOrse(url: URL, origin: string) {
   const tipo = url.searchParams.get('tipo') || 'Referencial';
   const termo = (url.searchParams.get('termo') || '').trim();
   const maxPages = Math.max(1, Math.min(20, Number(url.searchParams.get('paginas') || 5) || 5));
+  const maxServices = Math.max(1, Math.min(40, Number(url.searchParams.get('limite') || 25) || 25));
   const incluirItens = url.searchParams.get('itens') !== '0';
+  const termoNormalizado = termo.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  if (!termoNormalizado || termoNormalizado === 'orse' || termoNormalizado.length < 3) {
+    return json({
+      ok: false,
+      modo: 'termo_invalido',
+      mensagem: 'Para ORSE, informe uma palavra do serviço/composição. Não use apenas ORSE. Exemplos: concreto, pintura, telha, piso, argamassa.',
+      parametros: { fonte: 'ORSE', uf, mes: mesBase, tipo }
+    }, 400);
+  }
   const { year, month, order } = monthParams(mesBase);
   const periodo = `${year}-${month}-${order}`;
 
@@ -181,7 +191,8 @@ async function buscarOrse(url: URL, origin: string) {
     }
   }
 
-  const services = [...serviceMap.values()];
+  const allServices = [...serviceMap.values()];
+  const services = allServices.slice(0, maxServices);
   const rows = [['codigo', 'descricao', 'unidade', 'custo', 'insumo_codigo', 'insumo_descricao', 'insumo_unidade', 'coeficiente', 'preco_unitario', 'categoria']];
   let detailCount = 0;
   for (const service of services) {
@@ -223,7 +234,7 @@ async function buscarOrse(url: URL, origin: string) {
     parametros: { fonte: 'ORSE', uf, mes: normalizedMonth, tipo },
     fileName: `ORSE_${uf}_${normalizedMonth}_${termo || 'consulta'}.csv`,
     rows,
-    observacao: `Importadas ${services.length} composições da consulta ORSE. ${detailCount} vieram com itens analíticos. Termo: ${termo || 'sem filtro'}.`,
+    observacao: `Importadas ${services.length} composições da consulta ORSE. ${detailCount} vieram com itens analíticos. Termo: ${termo}. ${allServices.length > services.length ? `Foram encontrados mais resultados; refine o termo ou repita a busca. Limite desta busca: ${maxServices}.` : ''}`,
     portalOficial: `${origin}/`
   });
 }
