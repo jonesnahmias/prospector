@@ -494,7 +494,12 @@ async function migrateLocalLibrariesToBlob(){
   try{
    if(btn)btn.textContent='Migrando '+(done+1)+'/'+localLibs.length+'...';
    const comps=state.compositions.filter(c=>c.libraryId===lib.id);
-   const sups=state.supplies.filter(s=>s.libraryId===lib.id);
+   const sups=state.supplies.filter(s=>s.libraryId===lib.id||(
+    !s.libraryId&&String(s.source||'').trim()===String(lib.source||'').trim()&&
+    String(s.uf||lib.uf||'').trim()===String(lib.uf||'').trim()&&
+    String(s.baseDate||'').trim()===String(lib.baseDate||'').trim()&&
+    (!s.type||!lib.type||String(s.type).trim()===String(lib.type).trim())
+   )).map(s=>({...s,libraryId:lib.id}));
    const meta=await saveLibraryToBlob(lib,comps,sups);
    mergeBlobLibraryMeta(meta);
    done++;
