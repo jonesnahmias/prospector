@@ -1,7 +1,8 @@
 import { getStore } from "@netlify/blobs";
-import { getUser } from "@netlify/identity";
+import { createHash } from "node:crypto";
 
 const USER_STORE = "orcc-users";
+const AUTH_STORE = "orcc-auth";
 const ADMIN_STORE = "orcc-admin";
 const ADMIN_KEY = "config.json";
 
@@ -39,8 +40,24 @@ function adminStore() {
   return getStore({ name: ADMIN_STORE, consistency: "strong" });
 }
 
+function authStore() {
+  return getStore({ name: AUTH_STORE, consistency: "strong" });
+}
+
 function userStore() {
   return getStore({ name: USER_STORE, consistency: "strong" });
+}
+
+function tokenHash(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+async function getCurrentUser(req: Request) {
+  const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (!token) return null;
+  const session = await authStore().get(`sessions/${tokenHash(token)}.json`, { type: "json" }) as { email?: string } | null;
+  if (!session?.email) return null;
+  return await authStore().get(`users/${safeId(session.email)}.json`, { type: "json" }) as { id: string; email: string; name?: string; roles?: string[]; role?: string } | null;
 }
 
 async function readAdminConfig(): Promise<AdminConfig> {
@@ -54,8 +71,8 @@ async function writeAdminConfig(config: AdminConfig) {
   });
 }
 
-async function currentIsAdmin(config?: AdminConfig) {
-  const user = await getUser();
+async function currentIsAdmin(req: Request, config?: AdminConfig) {
+  const user = await getCurrentUser(req);
   if (!user?.id) return { user: null, ok: false };
   const cfg = config || await readAdminConfig();
   const roles = new Set([...(user.roles || []), String(user.role || "")]);
@@ -87,7 +104,7 @@ export default async (req: Request) => {
     const config = await readAdminConfig();
 
     if (req.method === "GET" && action === "status") {
-      const auth = await currentIsAdmin(config);
+      const auth = await currentIsAdmin(req, config);
       return json({
         ok: true,
         initialized: config.admins.length > 0,
@@ -101,7 +118,7 @@ export default async (req: Request) => {
 
     if (payload.action === "bootstrap-admin") {
       if (config.admins.length) return json({ ok: false, mensagem: "O gestor inicial ja foi criado." }, 409);
-      const user = await getUser();
+      const user = await getCurrentUser(req);
       if (!user?.id) return json({ ok: false, mensagem: "Entre ou crie uma conta antes de tornar este login gestor." }, 401);
 
       const managed: ManagedUser = {
@@ -115,7 +132,7 @@ export default async (req: Request) => {
       return json({ ok: true, user: { id: user.id, email: user.email, name: user.name, roles: ["admin"] } });
     }
 
-    const auth = await currentIsAdmin(config);
+    const auth = await currentIsAdmin(req, config);
     if (!auth.ok) return json({ ok: false, mensagem: "Apenas gestor do app pode executar esta acao." }, 403);
 
     if (payload.action === "create-user") {

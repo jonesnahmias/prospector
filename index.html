@@ -434,9 +434,27 @@
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module">import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';window.pdfjsLib=pdfjsLib;</script>
-<script type="module">
-import { getUser, login, logout, signup, handleAuthCallback, onAuthChange } from 'https://esm.sh/@netlify/identity@1.1.0';
-window.orccAuth={getUser,login,logout,signup,handleAuthCallback,onAuthChange};
+<script>
+const AUTH_TOKEN_KEY='orcc_auth_token_v1';
+const authListeners=[];
+function authToken(){try{return localStorage.getItem(AUTH_TOKEN_KEY)||''}catch(e){return ''}}
+function emitAuth(event,user){authListeners.forEach(fn=>{try{fn(event,user)}catch(e){console.warn(e)}})}
+async function authRequest(payload=null){
+ const token=authToken();
+ const opt=payload?{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(payload)}:{headers:{...(token?{Authorization:'Bearer '+token}:{})}};
+ const res=await fetch('/.netlify/functions/auth',opt);
+ const data=await res.json().catch(()=>({}));
+ if(!res.ok||!data.ok)throw new Error(data.mensagem||'Falha na autenticação.');
+ return data;
+}
+window.orccAuth={
+ async getUser(){const data=await authRequest();return data.user||null},
+ async login(email,password){const data=await authRequest({action:'login',email,password});localStorage.setItem(AUTH_TOKEN_KEY,data.token);emitAuth('login',data.user);return data.user},
+ async signup(email,password,meta={}){const data=await authRequest({action:'signup',email,password,name:meta.full_name||meta.name||''});localStorage.setItem(AUTH_TOKEN_KEY,data.token);emitAuth('signup',data.user);return data.user},
+ async logout(){const token=authToken();try{await authRequest({action:'logout',token})}finally{localStorage.removeItem(AUTH_TOKEN_KEY);emitAuth('logout',null)}},
+ async handleAuthCallback(){return null},
+ onAuthChange(fn){authListeners.push(fn);return()=>{const i=authListeners.indexOf(fn);if(i>=0)authListeners.splice(i,1)}}
+};
 window.dispatchEvent(new CustomEvent('orcc-auth-ready'));
 </script>
 <script>
@@ -482,7 +500,8 @@ function applyUserPrivateState(data){
  state.supplies=officialSups.concat(Array.isArray(data.supplies)?data.supplies:[]);
 }
 async function userStoreRequest(method='GET',payload=null){
- const opt=method==='GET'?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload||{})};
+ const token=authToken();
+ const opt=method==='GET'?{headers:{...(token?{Authorization:'Bearer '+token}:{})}}:{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify(payload||{})};
  const res=await fetch('/.netlify/functions/user-store',opt);
  const data=await res.json().catch(()=>({}));
  if(!res.ok||!data.ok)throw new Error(data.mensagem||'Falha ao acessar dados do usuário.');
@@ -530,14 +549,16 @@ function renderAuthCard(){
  }
 }
 async function adminApi(action,payload={}){
- const res=await fetch('/.netlify/functions/users-admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...payload})});
+ const token=authToken();
+ const res=await fetch('/.netlify/functions/users-admin',{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify({action,...payload})});
  const data=await res.json().catch(()=>({}));
  if(!res.ok||!data.ok)throw new Error(data.mensagem||'Falha na gestão de usuários.');
  return data;
 }
 async function refreshAppAdminStatus(){
  try{
-  const res=await fetch('/.netlify/functions/users-admin?action=status');
+  const token=authToken();
+  const res=await fetch('/.netlify/functions/users-admin?action=status',{headers:{...(token?{Authorization:'Bearer '+token}:{})}});
   const data=await res.json().catch(()=>({}));
   if(res.ok&&data.ok)appAdminStatus={initialized:!!data.initialized,isAdmin:!!data.isAdmin,user:data.user||null};
  }catch(e){console.warn('Status de gestor indisponível',e)}

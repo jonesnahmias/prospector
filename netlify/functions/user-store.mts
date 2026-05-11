@@ -1,7 +1,8 @@
 import { getStore } from "@netlify/blobs";
-import { getUser } from "@netlify/identity";
+import { createHash } from "node:crypto";
 
 const STORE_NAME = "orcc-users";
+const AUTH_STORE = "orcc-auth";
 const ADMIN_STORE = "orcc-admin";
 const ADMIN_KEY = "config.json";
 
@@ -23,6 +24,10 @@ function store() {
   return getStore({ name: STORE_NAME, consistency: "strong" });
 }
 
+function authStore() {
+  return getStore({ name: AUTH_STORE, consistency: "strong" });
+}
+
 function adminStore() {
   return getStore({ name: ADMIN_STORE, consistency: "strong" });
 }
@@ -41,14 +46,26 @@ async function promotePendingAdmin(userId: string) {
 }
 
 async function requireUser() {
-  const user = await getUser();
+  return null;
+}
+
+function tokenHash(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+async function currentUser(req: Request) {
+  const token = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (!token) return null;
+  const session = await authStore().get(`sessions/${tokenHash(token)}.json`, { type: "json" }) as { email?: string } | null;
+  if (!session?.email) return null;
+  const user = await authStore().get(`users/${safeId(session.email)}.json`, { type: "json" }) as { id: string; email: string; name?: string; roles?: string[] } | null;
   if (!user?.id) return null;
   return user;
 }
 
 export default async (req: Request) => {
   try {
-    const user = await requireUser();
+    const user = await currentUser(req);
     if (!user) return json({ ok: false, mensagem: "Usuário não autenticado." }, 401);
 
     const key = `users/${safeId(user.id)}.json`;
