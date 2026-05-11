@@ -268,7 +268,7 @@
       <div class="card" id="prevCard" style="display:none"><h3>Prévia</h3><div id="prevSummary" class="notice"></div><div class="table"><table id="prevTable"></table></div><div class="btns"><button class="btn pri" onclick="confirmImport()">✅ Confirmar importação</button><button class="btn soft" onclick="clearPrev()">Cancelar</button></div></div>
     </section>
 
-    <section id="bibliotecas" class="section"><div class="card"><div class="toolbar"><input class="search" id="libQ" oninput="render()" placeholder="Pesquisar biblioteca..."><button class="btn pri" onclick="go('importar')">Importar base</button></div><div id="libList"></div></div></section>
+    <section id="bibliotecas" class="section"><div class="card"><div class="toolbar"><input class="search" id="libQ" oninput="render()" placeholder="Pesquisar biblioteca..."><div class="tool"><button class="btn pri" onclick="go('importar')">Importar base</button><button class="btn soft" id="migrateBlobsBtn" onclick="migrateLocalLibrariesToBlob()" style="display:none">Migrar para Blobs</button></div></div><div id="libList"></div></div></section>
     <section id="composicoes" class="section"><div class="card"><div class="toolbar"><div class="tool"><input class="search" id="compQ" oninput="render()" placeholder="Pesquisar composição..."><select id="compSrc" onchange="render()"><option value="">Todas as fontes</option><option>SINAPI</option><option>SICRO</option><option>ORSE</option><option>SEINFRA</option><option>PROPRIA</option></select></div><button class="btn pri" onclick="openComp()">Nova composição</button></div><div id="compList"></div></div></section>
     <section id="insumos" class="section"><div class="card"><div class="toolbar"><input class="search" id="insQ" oninput="render()" placeholder="Pesquisar insumo..."><button class="btn pri" onclick="openSupply()">Novo insumo</button></div><div id="insList"></div></div></section>
     <section id="orcamentos" class="section"><div class="card"><div class="toolbar"><input class="search" id="orcQ" oninput="render()" placeholder="Pesquisar orçamento..."><div class="tool"><button class="btn pri" onclick="openBudget()">Novo orçamento</button><button class="btn soft" onclick="budgetImportFile.click()">Importar Excel/PDF</button><input type="file" id="budgetImportFile" accept=".xlsx,.xls,.csv,.pdf,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" style="display:none" onchange="importBudgetFile(this.files[0]);this.value=''"></div></div><div id="orcList"></div></div></section>
@@ -480,6 +480,32 @@ async function activateLibrary(id){
 }
 async function deleteBlobLibrary(id){
  await blobRequest('delete',{id});
+}
+async function migrateLocalLibrariesToBlob(){
+ const localLibs=state.libraries.filter(l=>l.storage!=='blob');
+ if(!localLibs.length){alert('Todas as bases cadastradas já estão no Netlify Blobs.');return}
+ const ok=confirm('Migrar '+localLibs.length+' base(s) local(is) para o Netlify Blobs?\n\nDepois da migração, elas ficam disponíveis também em outros dispositivos e deixam de pesar no armazenamento deste navegador.');
+ if(!ok)return;
+ const btn=document.getElementById('migrateBlobsBtn');
+ const oldText=btn?btn.textContent:'';
+ let done=0,failed=[];
+ if(btn){btn.disabled=true;btn.textContent='Migrando...'}
+ for(const lib of localLibs){
+  try{
+   if(btn)btn.textContent='Migrando '+(done+1)+'/'+localLibs.length+'...';
+   const comps=state.compositions.filter(c=>c.libraryId===lib.id);
+   const sups=state.supplies.filter(s=>s.libraryId===lib.id);
+   const meta=await saveLibraryToBlob(lib,comps,sups);
+   mergeBlobLibraryMeta(meta);
+   done++;
+  }catch(e){
+   failed.push((lib.name||lib.source||lib.id)+': '+(e?.message||e));
+  }
+ }
+ if(btn){btn.disabled=false;btn.textContent=oldText||'Migrar para Blobs'}
+ save();
+ const msg='Migração concluída.\n\nBases migradas: '+done+'.'+(failed.length?'\n\nFalhas:\n- '+failed.join('\n- '):'');
+ alert(msg);
 }
 function stateSizeKb(){try{return Math.round(new Blob([JSON.stringify(state)]).size/1024)}catch(e){return Math.round(JSON.stringify(state).length/1024)}}
 function id(p){return p+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8)}
@@ -1381,7 +1407,7 @@ async function confirmImport(){
 }
 function clearPrev(){prevCard.style.display='none';prevTable.innerHTML='';prevSummary.innerHTML=''}
 function downloadModelo(){let csv='codigo;descricao;unidade;custo;categoria;insumo_codigo;insumo_descricao;insumo_unidade;coeficiente;preco_unitario\nCOMP-001;Alvenaria de vedação em bloco cerâmico;m²;82,10;Mão de obra;MO-001;Pedreiro;h;0,80;28,00\nCOMP-001;Alvenaria de vedação em bloco cerâmico;m²;82,10;Material;MAT-001;Bloco cerâmico;un;25,00;1,20';download(csv,'modelo_importacao_composicoes.csv','text/csv;charset=utf-8')}
-function renderLibs(){let q=(libQ?.value||'').toLowerCase(),list=state.libraries.filter(l=>JSON.stringify(l).toLowerCase().includes(q));libList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Biblioteca</th><th>Fonte</th><th>UF</th><th>Mês-base</th><th>Tipo</th><th class="center">Composições</th><th>Ações</th></tr></thead><tbody>${list.map(l=>{let count=state.compositions.filter(c=>c.libraryId===l.id).length||l.compositionCount||0;let remote=l.storage==='blob'?'<span class="badge src">Blobs</span>':'';return`<tr><td><b>${esc(l.name)}</b> ${state.settings.activeLibraryId===l.id?'<span class="badge sc">Ativa</span>':''} ${remote}</td><td><span class="badge src">${esc(l.source)}</span></td><td><span class="badge sc">${esc(l.uf)}</span></td><td>${esc(l.baseDate)}</td><td>${esc(l.type)}</td><td class="center">${count}</td><td class="action-cell"><div class="action-stack"><button class="btn ok" onclick="activateLibrary('${l.id}')">Ativar</button><button class="btn danger" onclick="delLib('${l.id}')">Excluir</button></div></td></tr>`}).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma biblioteca importada.</div>'}
+function renderLibs(){let q=(libQ?.value||'').toLowerCase(),list=state.libraries.filter(l=>JSON.stringify(l).toLowerCase().includes(q));if(typeof migrateBlobsBtn!=='undefined')migrateBlobsBtn.style.display=state.libraries.some(l=>l.storage!=='blob')?'inline-flex':'none';libList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Biblioteca</th><th>Fonte</th><th>UF</th><th>Mês-base</th><th>Tipo</th><th class="center">Composições</th><th>Ações</th></tr></thead><tbody>${list.map(l=>{let count=state.compositions.filter(c=>c.libraryId===l.id).length||l.compositionCount||0;let remote=l.storage==='blob'?'<span class="badge src">Blobs</span>':'';return`<tr><td><b>${esc(l.name)}</b> ${state.settings.activeLibraryId===l.id?'<span class="badge sc">Ativa</span>':''} ${remote}</td><td><span class="badge src">${esc(l.source)}</span></td><td><span class="badge sc">${esc(l.uf)}</span></td><td>${esc(l.baseDate)}</td><td>${esc(l.type)}</td><td class="center">${count}</td><td class="action-cell"><div class="action-stack"><button class="btn ok" onclick="activateLibrary('${l.id}')">Ativar</button><button class="btn danger" onclick="delLib('${l.id}')">Excluir</button></div></td></tr>`}).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma biblioteca importada.</div>'}
 async function delLib(x){if(!confirm('Excluir biblioteca e composições vinculadas?'))return;const l=state.libraries.find(a=>a.id===x);if(l&&l.storage==='blob'){try{await deleteBlobLibrary(x)}catch(e){if(!confirm('Não foi possível excluir no Netlify Blobs: '+(e?.message||e)+'\n\nRemover apenas deste navegador?'))return}}state.libraries=state.libraries.filter(l=>l.id!==x);state.compositions=state.compositions.filter(c=>c.libraryId!==x);state.supplies=state.supplies.filter(s=>s.libraryId!==x);if(state.settings.activeLibraryId===x)state.settings.activeLibraryId='';save()}
 
 function renderSupplies(){let q=(insQ?.value||'').toLowerCase(),list=state.supplies.filter(s=>JSON.stringify(s).toLowerCase().includes(q));insList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Código</th><th>Descrição</th><th>Categoria</th><th>Un.</th><th class="right">Preço</th><th>Fonte</th><th>Ações</th></tr></thead><tbody>${list.map(s=>`<tr><td>${esc(s.code)}</td><td>${esc(s.description)}</td><td>${esc(s.category)}</td><td>${esc(s.unit)}</td><td class="right strong">${br(s.price)}</td><td>${esc(s.source)}</td><td class="action-cell"><div class="action-stack"><button class="btn soft" onclick="openSupply('${s.id}')">Editar</button><button class="btn blue" onclick="printSupply('${s.id}')">Imprimir</button><button class="btn danger" onclick="delSupply('${s.id}')">Excluir</button></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhum insumo cadastrado.</div>'}
