@@ -115,6 +115,7 @@
     <button class="nav" data-s="bibliotecas">📚 Bases cadastradas</button>
     <button class="nav" data-s="importar">📥 Importar base</button>
     <button class="nav" data-s="config">⚙️ Configurações</button>
+    <button class="nav" data-s="usuarios" id="usersNav" style="display:none">👥 Usuários</button>
     <button class="nav" data-s="backup">💾 Backup</button>
     <div class="nav-title">Atalhos</div>
     <button class="nav" type="button" onclick="toggleTheme()" id="sideThemeToggle">🌙 Modo noturno</button>
@@ -298,6 +299,28 @@
       <div class="card"><h3>Acesso administrativo</h3><p>Proteja a importação de bases com uma senha local deste navegador.</p><div class="form"><div class="span2"><label>Nova senha para importar bases</label><input type="password" id="cfgAdminPass" placeholder="Deixe em branco para manter a senha atual"></div><div class="span2"><label>Confirmar senha</label><input type="password" id="cfgAdminPass2" placeholder="Repita a nova senha"></div></div><div class="notice" style="margin-top:14px">Essa senha limita o acesso dentro do app. Como o site é estático, ela não substitui autenticação real de servidor.</div><div class="btns"><button class="btn pri" onclick="saveAdminPassword()">Salvar senha</button><button class="btn soft" onclick="lockAdmin()">Bloquear agora</button><button class="btn danger" onclick="clearAdminPassword()">Remover senha</button></div></div>
     </section>
 
+    <section id="usuarios" class="section">
+      <div class="card"><h3>Gestor do app</h3><p id="adminStatus">Verificando configuração de gestor...</p>
+        <div class="form" id="bootstrapAdminForm">
+          <div><label>E-mail do gestor</label><input type="email" id="bootEmail" placeholder="gestor@empresa.com"></div>
+          <div><label>Nome</label><input id="bootName" placeholder="Gestor ORCC"></div>
+          <div><label>Senha inicial</label><input type="password" id="bootPass" placeholder="mínimo 6 caracteres"></div>
+          <div><label>&nbsp;</label><button class="btn pri" onclick="createFirstAdmin()">Criar gestor inicial</button></div>
+        </div>
+      </div>
+      <div class="card" id="userAdminPanel" style="display:none"><h3>Criar usuário</h3><p>Usuários novos recebem somente as bases globais. Marque a opção abaixo apenas para copiar os orçamentos atuais, por exemplo para a Philar.</p>
+        <div class="form">
+          <div><label>E-mail</label><input type="email" id="newUserEmail" placeholder="usuario@empresa.com"></div>
+          <div><label>Nome/Empresa</label><input id="newUserName" placeholder="Philar Construções"></div>
+          <div><label>Senha inicial</label><input type="password" id="newUserPass" placeholder="mínimo 6 caracteres"></div>
+          <div><label>Perfil</label><select id="newUserRole"><option value="user">Usuário</option><option value="admin">Gestor</option></select></div>
+          <div class="span4"><label><input type="checkbox" id="newUserSeed" style="width:auto;margin-right:8px">Copiar para este usuário os orçamentos, composições próprias e empresa que estão neste navegador</label></div>
+        </div>
+        <div class="btns"><button class="btn pri" onclick="createManagedUser()">Criar usuário</button><button class="btn soft" onclick="loadManagedUsers()">Atualizar lista</button></div>
+        <div id="managedUsersList" style="margin-top:14px"></div>
+      </div>
+    </section>
+
     <section id="backup" class="section">
       <div class="grid g2">
         <div class="card"><h3>Exportar backup JSON</h3><p>Baixe todos os dados salvos neste navegador.</p><div class="btns"><button class="btn pri" onclick="exportBackup()">Exportar backup</button></div></div>
@@ -422,7 +445,7 @@ window.dispatchEvent(new CustomEvent('orcc-auth-ready'));
 <script>
 const KEY='composicoes_obras_sc_v1';
 const DB_NAME='orcc_store_v2',DB_STORE='state',DB_KEY='main';
-let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, memoryBudgetItem=-1, memoryRows=[], dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false, authUser=null, authReady=false, userSaveTimer=null, userCloudLoading=false;
+let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, memoryBudgetItem=-1, memoryRows=[], dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false, authUser=null, authReady=false, userSaveTimer=null, userCloudLoading=false, appAdminStatus={initialized:false,isAdmin:false,user:null};
 function emptyCompany(){return{name:'',doc:'',phone:'',email:'',address:'',notes:'',logo:''}}
 function base(){return{settings:{uf:'SC',fonte:'SINAPI',tipo:'Não desonerado',bdi:25,activeLibraryId:'',theme:'light',company:emptyCompany(),adminPassword:''},libraries:[],supplies:[],compositions:[],budgets:[]}}
 function mergeState(d){let b=base(),settings={...b.settings,...((d||{}).settings||{})};settings.company={...emptyCompany(),...(settings.company||{})};return {...b,...(d||{}),settings}}
@@ -503,10 +526,67 @@ async function loadUserCloud(){
 function renderAuthCard(){
  if(typeof authCard==='undefined')return;
  if(authUser){
-  authCard.innerHTML=`<b>Usuário:</b> ${esc(authUser.email||authUser.name||'logado')}<br><span class="small">Dados privados sincronizados na nuvem.</span><div class="btns"><button class="btn soft" onclick="saveUserCloud()">Salvar agora</button><button class="btn danger" onclick="logoutUser()">Sair</button></div>`;
+  const role=appAdminStatus.isAdmin?'Gestor':'Usuário';
+  authCard.innerHTML=`<b>${role}:</b> ${esc(authUser.email||authUser.name||'logado')}<br><span class="small">Dados privados sincronizados na nuvem.</span><div class="btns"><button class="btn soft" onclick="saveUserCloud()">Salvar agora</button><button class="btn danger" onclick="logoutUser()">Sair</button></div>`;
  }else{
   authCard.innerHTML='<b>Usuário:</b> modo local<br><span class="small">Entre para salvar orçamentos e composições próprias na nuvem.</span><div class="btns"><button class="btn pri" onclick="openAuth()">Entrar</button></div>';
  }
+}
+async function adminApi(action,payload={}){
+ const res=await fetch('/.netlify/functions/users-admin',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...payload})});
+ const data=await res.json().catch(()=>({}));
+ if(!res.ok||!data.ok)throw new Error(data.mensagem||'Falha na gestão de usuários.');
+ return data;
+}
+async function refreshAppAdminStatus(){
+ try{
+  const res=await fetch('/.netlify/functions/users-admin?action=status');
+  const data=await res.json().catch(()=>({}));
+  if(res.ok&&data.ok)appAdminStatus={initialized:!!data.initialized,isAdmin:!!data.isAdmin,user:data.user||null};
+ }catch(e){console.warn('Status de gestor indisponível',e)}
+ renderUserAdminUi();
+ renderAuthCard();
+}
+function renderUserAdminUi(){
+ if(typeof usersNav!=='undefined')usersNav.style.display=(!appAdminStatus.initialized||appAdminStatus.isAdmin)?'block':'none';
+ if(typeof adminStatus==='undefined')return;
+ if(!appAdminStatus.initialized){
+  adminStatus.textContent='Nenhum gestor criado. Crie o primeiro login de administrador do app.';
+  bootstrapAdminForm.style.display='grid';
+  userAdminPanel.style.display='none';
+ }else if(appAdminStatus.isAdmin){
+  adminStatus.textContent='Gestor logado. Você pode criar usuários e decidir se eles recebem dados atuais ou entram limpos.';
+  bootstrapAdminForm.style.display='none';
+  userAdminPanel.style.display='block';
+ }else{
+  adminStatus.textContent='Gestor já configurado. Entre com uma conta gestora para criar usuários.';
+  bootstrapAdminForm.style.display='none';
+  userAdminPanel.style.display='none';
+ }
+}
+async function createFirstAdmin(){
+ try{
+  const data=await adminApi('bootstrap-admin',{email:bootEmail.value.trim(),password:bootPass.value,name:bootName.value.trim()||'Gestor ORCC'});
+  alert('Gestor criado: '+(data.user?.email||bootEmail.value)+'. Agora entre com esse login no card Usuário.');
+  await refreshAppAdminStatus();
+  openAuth();
+  authEmail.value=bootEmail.value.trim();
+ }catch(e){alert('Não foi possível criar o gestor.\n\nDetalhe: '+(e?.message||e))}
+}
+async function createManagedUser(){
+ try{
+  const initialData=newUserSeed.checked?userPrivateState():null;
+  const data=await adminApi('create-user',{email:newUserEmail.value.trim(),password:newUserPass.value,name:newUserName.value.trim(),role:newUserRole.value,initialData});
+  alert('Usuário criado: '+(data.user?.email||newUserEmail.value));
+  newUserEmail.value='';newUserName.value='';newUserPass.value='';newUserSeed.checked=false;newUserRole.value='user';
+  await loadManagedUsers();
+ }catch(e){alert('Não foi possível criar o usuário.\n\nDetalhe: '+(e?.message||e))}
+}
+async function loadManagedUsers(){
+ try{
+  const data=await adminApi('list-users');
+  managedUsersList.innerHTML=(data.users||[]).length?`<div class="table"><table><thead><tr><th>E-mail</th><th>Nome</th><th>Perfil</th></tr></thead><tbody>${data.users.map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.name||'')}</td><td>${esc((u.roles&&u.roles[0])||u.role||'user')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhum usuário listado.</div>';
+ }catch(e){managedUsersList.innerHTML='<div class="notice warn">Não foi possível listar usuários: '+esc(e?.message||e)+'</div>'}
 }
 function openAuth(){authMsg.style.display='none';openM('authModal');setTimeout(()=>authEmail.focus(),80)}
 function authMessage(msg){authMsg.style.display='block';authMsg.textContent=msg}
@@ -518,6 +598,7 @@ async function loginUser(){
   closeM('authModal');
   renderAuthCard();
   await loadUserCloud();
+  await refreshAppAdminStatus();
  }catch(e){authMessage(e?.message||'Não foi possível entrar.')}
 }
 async function signupUser(){
@@ -528,6 +609,7 @@ async function signupUser(){
   closeM('authModal');
   renderAuthCard();
   await loadUserCloud();
+  await refreshAppAdminStatus();
  }catch(e){authMessage(e?.message||'Não foi possível criar a conta.')}
 }
 async function logoutUser(){
@@ -535,7 +617,9 @@ async function logoutUser(){
  if(!confirm('Sair deste usuário? Os dados locais permanecem neste navegador.'))return;
  try{await saveUserCloud(true);await window.orccAuth.logout()}catch(e){}
  authUser=null;
+ appAdminStatus={...appAdminStatus,isAdmin:false,user:null};
  renderAuthCard();
+ renderUserAdminUi();
  render();
 }
 async function initAuth(){
@@ -546,6 +630,7 @@ async function initAuth(){
  window.orccAuth.onAuthChange?.((event,user)=>{authUser=user;renderAuthCard();if(user)loadUserCloud()});
  renderAuthCard();
  if(authUser)await loadUserCloud();
+ await refreshAppAdminStatus();
 }
 async function blobRequest(action,payload=null){
  const url='/.netlify/functions/bases-store'+(payload===null?'?action='+encodeURIComponent(action):'');
@@ -1143,6 +1228,7 @@ function fillAnalyticExample(){
 function render(){
  applyTheme();
  renderAuthCard();
+ renderUserAdminUi();
  stLib.textContent=state.libraries.length;stComp.textContent=state.compositions.length;stIns.textContent=state.supplies.length;stOrc.textContent=state.budgets.length;
  let lib=state.libraries.find(l=>l.id===state.settings.activeLibraryId);activeLib.textContent=lib?'📚 Biblioteca ativa: '+lib.name:'📚 Biblioteca ativa: nenhuma';
  cfgUf.value=state.settings.uf;cfgFonte.value=state.settings.fonte;cfgTipo.value=state.settings.tipo;cfgBdi.value=state.settings.bdi;impUf.value=state.settings.uf;impFonte.value=state.settings.fonte;impTipo.value=state.settings.tipo;
