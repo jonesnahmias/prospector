@@ -195,7 +195,7 @@
         <div id="officialPanel" style="display:none">
           <h3>Opção B — Baixar base oficial</h3>
           <div class="notice warn">
-            Nesta versão estática, o botão prepara a solicitação e mostra o fluxo. Para baixar automaticamente de CAIXA/IBGE/DNIT, será necessário adicionar uma <b>Netlify Function</b> no projeto.
+            ORSE pode ser buscado pelo site oficial sem instalar o aplicativo. Para evitar travamentos, use um termo de busca e importe por lotes.
           </div>
 
           <div class="form">
@@ -203,12 +203,15 @@
             <div><label>UF padrão</label><select id="ofUf"><option value="SC">SC - Santa Catarina</option><option value="RS">RS</option><option value="PR">PR</option><option value="SP">SP</option><option value="MG">MG</option><option value="RJ">RJ</option><option value="OUTRA">Outra</option></select></div>
             <div><label>Mês-base</label><input type="month" id="ofMes"></div>
             <div><label>Tipo</label><select id="ofTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option></select></div>
+            <div class="span2"><label>Termo ORSE</label><input id="ofTermo" placeholder="Ex.: concreto, pintura, telha"></div>
+            <div><label>Páginas ORSE</label><input type="number" min="1" max="20" step="1" id="ofPaginas" value="5"></div>
+            <div><label>Itens analíticos</label><select id="ofItens"><option value="1">Importar com itens</option><option value="0">Só composições</option></select></div>
           </div>
 
           <div class="official-grid">
             <div class="official-card"><h4>SINAPI/SC</h4><p>Principal referência para edificações e obras públicas.</p><button class="btn pri" onclick="prepareOfficialDownload('SINAPI')">Preparar SINAPI/SC</button></div>
             <div class="official-card"><h4>SICRO</h4><p>Referência para rodovias, pavimentação, drenagem e infraestrutura.</p><button class="btn blue" onclick="prepareOfficialDownload('SICRO')">Preparar SICRO</button></div>
-            <div class="official-card"><h4>ORSE / SEINFRA</h4><p>Bases regionais conectáveis depois por função Netlify.</p><button class="btn soft" onclick="prepareOfficialDownload('ORSE')">Preparar regional</button></div>
+            <div class="official-card"><h4>ORSE</h4><p>Consulta oficial online por termo, com composições e itens quando disponíveis.</p><button class="btn soft" onclick="prepareOfficialDownload('ORSE')">Preparar ORSE</button></div>
             <div class="official-card"><h4>Atualizar base</h4><p>Estrutura para comparar mês antigo x mês novo futuramente.</p><button class="btn warn" onclick="prepareOfficialDownload('ATUALIZAR')">Preparar atualização</button></div>
           </div>
 
@@ -511,11 +514,12 @@ function importRowsFromOfficial(rows,fileName,meta={}){
  const fakeFile={name:fileName||'base_oficial.xlsx'};
  if(parseSicroAnalyticRows(rows,fakeFile))return;
  if(parseAnalyticSinapiRows(rows,fakeFile))return;
+ if(parseGenericOfficialRows(rows,fakeFile,meta))return;
  impNome.value=old.name;impFonte.value=old.fonte;impUf.value=old.uf;impMes.value=old.mes;impTipo.value=old.tipo;
  alert('A base foi baixada, mas o formato ainda não é reconhecido automaticamente. Use o upload manual ou converta para CSV modelo.');
 }
 async function downloadOfficialBase(){
- const params=new URLSearchParams({fonte:ofFonte.value,uf:ofUf.value,mes:ofMes.value,tipo:ofTipo.value});
+ const params=new URLSearchParams({fonte:ofFonte.value,uf:ofUf.value,mes:ofMes.value,tipo:ofTipo.value,termo:ofTermo.value,paginas:ofPaginas.value,itens:ofItens.value});
  officialResult.style.display='block';
  officialResult.innerHTML='<b>Buscando base...</b>';
  try{
@@ -525,19 +529,55 @@ async function downloadOfficialBase(){
      officialResult.innerHTML=`<b>Base não encontrada automaticamente.</b><br>${esc(data.mensagem||'Tente baixar pelo site oficial.')} ${data.portalOficial?`<br><br><a class="btn soft" target="_blank" rel="noopener" href="${esc(data.portalOficial)}">Abrir site oficial</a>`:''}`;
      return;
    }
-   officialResult.innerHTML=`<b>Base encontrada:</b> ${esc(data.fileName||'arquivo oficial')}<br>Baixando e preparando prévia...`;
+   officialResult.innerHTML=`<b>Base encontrada:</b> ${esc(data.fileName||'arquivo oficial')}<br>Preparando prévia...`;
+   const meta={fonte:data.parametros?.fonte||ofFonte.value,uf:data.parametros?.uf||ofUf.value,mes:data.parametros?.mes||ofMes.value,tipo:data.parametros?.tipo||ofTipo.value};
+   const baseName=`${meta.fonte} ${meta.uf} ${meta.mes} ${meta.tipo}`;
+   if(Array.isArray(data.rows)){
+     importRowsFromOfficial(data.rows,data.fileName||'base_oficial.csv',{...meta,name:baseName});
+     officialResult.innerHTML=`<b>Base preparada.</b><br>${esc(data.observacao||'Confira a prévia abaixo e confirme a importação.')}`;
+     return;
+   }
    const fileRes=await fetch(data.downloadUrl);
    if(!fileRes.ok)throw new Error('Não foi possível baixar o arquivo informado pela função.');
    const buffer=await fileRes.arrayBuffer();
    if(typeof XLSX==='undefined')throw new Error('Biblioteca XLSX não carregou no navegador.');
    const workbook=XLSX.read(new Uint8Array(buffer),{type:'array'});
-   const meta={fonte:data.parametros?.fonte||ofFonte.value,uf:data.parametros?.uf||ofUf.value,mes:data.parametros?.mes||ofMes.value,tipo:data.parametros?.tipo||ofTipo.value};
-   const baseName=`${meta.fonte} ${meta.uf} ${meta.mes} ${meta.tipo}`;
    importRowsFromOfficial(excelRowsFromWorkbook(workbook),data.fileName||'base_oficial.xlsx',{...meta,name:baseName});
    officialResult.innerHTML=`<b>Base baixada.</b><br>${esc(data.observacao||'Confira a prévia abaixo e confirme a importação.')}`;
  }catch(err){
    officialResult.innerHTML='<b>Erro na busca automática.</b><br>'+esc(err?.message||err);
  }
+}
+function parseGenericOfficialRows(rows,file,meta={}){
+ let heads=rows[0].map(norm), data=rows.slice(1).map(cols=>{let o={};heads.forEach((h,i)=>o[h]=String(cols[i]??'').trim());return o});
+ if(!heads.includes('codigo')||!heads.includes('descricao'))return false;
+ let fonte=meta.fonte||impFonte.value,uf=meta.uf||impUf.value||'SC',mes=meta.mes||impMes.value||new Date().toISOString().slice(0,7),tipo=meta.tipo||impTipo.value,nome=meta.name||impNome.value.trim()||`${fonte} ${uf} ${mes} ${tipo}`;
+ let comps=new Map(), sups=new Map(), invalid=0;
+ data.forEach(r=>{
+   let code=pick(r,['codigo','código','cod','item','composicao_codigo','codigo_composicao']);
+   let desc=pick(r,['descricao','descrição','servico','serviço','composicao','descricao_composicao']);
+   let unit=pick(r,['unidade','un','und']);
+   let cost=n(pick(r,['custo','custo_unitario','preco','preço','preco_unitario','valor','total']));
+   if(!code&&!desc){invalid++;return}
+   let k=code||desc;
+   if(!comps.has(k))comps.set(k,{id:id('comp'),code:code||'SEM-COD',description:desc||'Sem descrição',unit,source:fonte,uf,baseDate:mes,type:tipo,note:'Importado automaticamente do ORSE oficial.',libraryId:'',items:[],cost});
+   let ic=pick(r,['insumo_codigo','codigo_insumo','cod_insumo']);
+   let idc=pick(r,['insumo_descricao','descricao_insumo','insumo']);
+   if(ic||idc){
+     let iu=pick(r,['insumo_unidade','unidade_insumo','un_insumo']);
+     let coef=n(pick(r,['coeficiente','coef','consumo','quantidade_insumo']));
+     let price=n(pick(r,['preco_unitario','preço_unitario','insumo_preco','preco_insumo','preco_unitario_insumo','valor_insumo']));
+     let cat=pick(r,['categoria','tipo_insumo','grupo'])||classifyAnalyticItem('INSUMO',ic,idc);
+     let sk=ic||idc;
+     if(!sups.has(sk))sups.set(sk,{id:id('sup'),code:ic||'INS',description:idc||'Insumo sem descrição',unit:iu,category:cat,price,source:fonte,baseDate:mes,note:'Importado de '+nome});
+     comps.get(k).items.push({id:id('item'),supplyId:'',code:ic,description:idc,category:cat,unit:iu,coefficient:coef,price,waste:0});
+   }
+ });
+ let compArr=[...comps.values()].map(c=>{if(c.items.length)c.cost=c.items.reduce((a,i)=>a+itemTotal(i),0)||n(c.cost);return c});
+ buffer={library:{id:id('lib'),name:nome,source:fonte,uf,baseDate:mes,type:tipo,createdAt:new Date().toISOString(),compositionCount:compArr.length,supplyCount:sups.size,mode:'composicoes'},compositions:compArr,supplies:[...sups.values()],invalid};
+ buffer.warnings=analyzeImportBuffer(buffer);
+ renderPrev();
+ return true;
 }
 function generateNetlifyFunctionModel(){
   const model = `// netlify/functions/baixar-base.mts
