@@ -12,9 +12,12 @@
 *.ORSE
 sc-01-2026/
 SINAPI-2026-03-formato-xlsx/
+node_modules/
+package-lock.json
 
-# Exceções: código-fonte e configuração do app
+# Excecoes: codigo-fonte e configuracao do app
 !index.html
+!package.json
 !netlify/
 !netlify/functions/
 !netlify/functions/*.mts

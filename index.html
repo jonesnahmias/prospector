@@ -395,14 +395,60 @@ function base(){return{settings:{uf:'SC',fonte:'SINAPI',tipo:'Não desonerado',b
 function mergeState(d){let b=base(),settings={...b.settings,...((d||{}).settings||{})};settings.company={...emptyCompany(),...(settings.company||{})};return {...b,...(d||{}),settings}}
 function load(){try{return mergeState(JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){return base()}}
 function openDb(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB indisponível neste navegador.'));return}const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>req.result.createObjectStore(DB_STORE);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
-async function loadFromDb(){try{const db=await openDb();const data=await new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readonly'),store=tx.objectStore(DB_STORE),req=store.get(DB_KEY);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});if(data){state=mergeState(data);render()}dbReady=true;return true}catch(e){dbReady=false;console.warn('IndexedDB não carregou',e);return false}}
-async function saveToDb(){const db=await openDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readwrite'),store=tx.objectStore(DB_STORE),req=store.put(state,DB_KEY);req.onsuccess=()=>resolve(true);req.onerror=()=>reject(req.error)})}
+async function loadFromDb(){try{const db=await openDb();const data=await new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readonly'),store=tx.objectStore(DB_STORE),req=store.get(DB_KEY);req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});if(data){state=mergeState(data);render();syncBlobLibraries().then(()=>loadActiveBlobLibrary()).catch(e=>console.warn('Blobs não sincronizou',e))}dbReady=true;return true}catch(e){dbReady=false;console.warn('IndexedDB não carregou',e);return false}}
+function isBlobLib(id){let l=state.libraries.find(x=>x.id===id);return l&&l.storage==='blob'}
+function stateForPersist(){const blobIds=new Set(state.libraries.filter(l=>l.storage==='blob').map(l=>l.id));return {...state,compositions:state.compositions.filter(c=>!blobIds.has(c.libraryId)),supplies:state.supplies.filter(s=>!blobIds.has(s.libraryId))}}
+async function saveToDb(){const db=await openDb();return new Promise((resolve,reject)=>{const tx=db.transaction(DB_STORE,'readwrite'),store=tx.objectStore(DB_STORE),req=store.put(stateForPersist(),DB_KEY);req.onsuccess=()=>resolve(true);req.onerror=()=>reject(req.error)})}
 function save(){
  render();
  saveToDb().then(()=>{dbReady=true;try{localStorage.setItem(KEY,JSON.stringify({settings:state.settings,libraries:state.libraries,budgets:state.budgets}))}catch(e){localStorage.removeItem(KEY)}}).catch(err=>{
    try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){alert('Não foi possível salvar os dados. O navegador bloqueou o IndexedDB e o localStorage está cheio.\n\nDetalhe: '+(err?.message||e?.message||err))}
  });
  return true;
+}
+async function blobRequest(action,payload=null){
+ const url='/.netlify/functions/bases-store'+(payload===null?'?action='+encodeURIComponent(action):'');
+ const opt=payload===null?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...payload})};
+ const res=await fetch(url,opt),data=await res.json().catch(()=>({}));
+ if(!res.ok||!data.ok)throw new Error(data.mensagem||'Falha no armazenamento Netlify Blobs.');
+ return data;
+}
+function mergeBlobLibraryMeta(meta){
+ if(!meta||!meta.id)return;
+ const i=state.libraries.findIndex(l=>l.id===meta.id);
+ i>=0?state.libraries[i]={...state.libraries[i],...meta}:state.libraries.push(meta);
+}
+async function syncBlobLibraries(){
+ const data=await blobRequest('list');
+ (data.libraries||[]).forEach(mergeBlobLibraryMeta);
+ render();
+}
+async function saveLibraryToBlob(library,compositions,supplies){
+ const data=await blobRequest('save',{library,compositions,supplies});
+ mergeBlobLibraryMeta(data.library);
+ return data.library;
+}
+async function loadBlobLibraryById(id){
+ const res=await fetch('/.netlify/functions/bases-store?action=load&id='+encodeURIComponent(id));
+ const data=await res.json().catch(()=>({}));
+ if(!res.ok||!data.ok)throw new Error(data.mensagem||'Não foi possível carregar a biblioteca do Blobs.');
+ const lib=data.library||data.base?.library;
+ if(lib)mergeBlobLibraryMeta(lib);
+ state.compositions=state.compositions.filter(c=>c.libraryId!==id).concat((data.base?.compositions||[]).map(c=>({...c,libraryId:id})));
+ state.supplies=state.supplies.filter(s=>s.libraryId!==id).concat((data.base?.supplies||[]).map(s=>({...s,libraryId:id})));
+ return data;
+}
+async function loadActiveBlobLibrary(){if(state.settings.activeLibraryId&&isBlobLib(state.settings.activeLibraryId)){await loadBlobLibraryById(state.settings.activeLibraryId);render()}}
+async function activateLibrary(id){
+ state.settings.activeLibraryId=id;
+ const l=state.libraries.find(x=>x.id===id);
+ if(l&&l.storage==='blob'){
+   try{await loadBlobLibraryById(id)}catch(e){alert('Não foi possível carregar a base do Netlify Blobs: '+(e?.message||e));return}
+ }
+ save();
+}
+async function deleteBlobLibrary(id){
+ await blobRequest('delete',{id});
 }
 function stateSizeKb(){try{return Math.round(new Blob([JSON.stringify(state)]).size/1024)}catch(e){return Math.round(JSON.stringify(state).length/1024)}}
 function id(p){return p+'_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8)}
@@ -1113,7 +1159,7 @@ function renderPrev(){
  }
  prevCard.scrollIntoView({behavior:'smooth'});
 }
-function confirmImport(){
+async function confirmImport(){
  if(!buffer)return;
  if(buffer.warnings&&buffer.warnings.length){
    const ok=confirm('A importacao possui avisos:\n\n- '+buffer.warnings.join('\n- ')+'\n\nDeseja importar mesmo assim?');
@@ -1196,9 +1242,17 @@ function confirmImport(){
 
  let lid=buffer.library.id;
  buffer.compositions.forEach(c=>c.libraryId=lid);
- state.libraries.push(buffer.library);
- state.supplies.push(...buffer.supplies);
- state.compositions.push(...buffer.compositions);
+ buffer.supplies.forEach(s=>s.libraryId=lid);
+ let lib=buffer.library;
+ try{
+   lib=await saveLibraryToBlob(buffer.library,buffer.compositions,buffer.supplies);
+ }catch(e){
+   const ok=confirm('Não foi possível salvar esta base no Netlify Blobs.\n\nDetalhe: '+(e?.message||e)+'\n\nDeseja salvar somente neste navegador?');
+   if(!ok)return;
+ }
+ mergeBlobLibraryMeta(lib);
+ state.supplies=state.supplies.filter(s=>s.libraryId!==lid).concat(buffer.supplies);
+ state.compositions=state.compositions.filter(c=>c.libraryId!==lid).concat(buffer.compositions);
  state.settings.activeLibraryId=lid;
  buffer=null;
  clearPrev();
@@ -1208,8 +1262,8 @@ function confirmImport(){
 }
 function clearPrev(){prevCard.style.display='none';prevTable.innerHTML='';prevSummary.innerHTML=''}
 function downloadModelo(){let csv='codigo;descricao;unidade;custo;categoria;insumo_codigo;insumo_descricao;insumo_unidade;coeficiente;preco_unitario\nCOMP-001;Alvenaria de vedação em bloco cerâmico;m²;82,10;Mão de obra;MO-001;Pedreiro;h;0,80;28,00\nCOMP-001;Alvenaria de vedação em bloco cerâmico;m²;82,10;Material;MAT-001;Bloco cerâmico;un;25,00;1,20';download(csv,'modelo_importacao_composicoes.csv','text/csv;charset=utf-8')}
-function renderLibs(){let q=(libQ?.value||'').toLowerCase(),list=state.libraries.filter(l=>JSON.stringify(l).toLowerCase().includes(q));libList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Biblioteca</th><th>Fonte</th><th>UF</th><th>Mês-base</th><th>Tipo</th><th class="center">Composições</th><th>Ações</th></tr></thead><tbody>${list.map(l=>`<tr><td><b>${esc(l.name)}</b> ${state.settings.activeLibraryId===l.id?'<span class="badge sc">Ativa</span>':''}</td><td><span class="badge src">${esc(l.source)}</span></td><td><span class="badge sc">${esc(l.uf)}</span></td><td>${esc(l.baseDate)}</td><td>${esc(l.type)}</td><td class="center">${state.compositions.filter(c=>c.libraryId===l.id).length}</td><td class="action-cell"><div class="action-stack"><button class="btn ok" onclick="state.settings.activeLibraryId='${l.id}';save()">Ativar</button><button class="btn danger" onclick="delLib('${l.id}')">Excluir</button></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma biblioteca importada.</div>'}
-function delLib(x){if(!confirm('Excluir biblioteca e composições vinculadas?'))return;state.libraries=state.libraries.filter(l=>l.id!==x);state.compositions=state.compositions.filter(c=>c.libraryId!==x);if(state.settings.activeLibraryId===x)state.settings.activeLibraryId='';save()}
+function renderLibs(){let q=(libQ?.value||'').toLowerCase(),list=state.libraries.filter(l=>JSON.stringify(l).toLowerCase().includes(q));libList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Biblioteca</th><th>Fonte</th><th>UF</th><th>Mês-base</th><th>Tipo</th><th class="center">Composições</th><th>Ações</th></tr></thead><tbody>${list.map(l=>{let count=state.compositions.filter(c=>c.libraryId===l.id).length||l.compositionCount||0;let remote=l.storage==='blob'?'<span class="badge src">Blobs</span>':'';return`<tr><td><b>${esc(l.name)}</b> ${state.settings.activeLibraryId===l.id?'<span class="badge sc">Ativa</span>':''} ${remote}</td><td><span class="badge src">${esc(l.source)}</span></td><td><span class="badge sc">${esc(l.uf)}</span></td><td>${esc(l.baseDate)}</td><td>${esc(l.type)}</td><td class="center">${count}</td><td class="action-cell"><div class="action-stack"><button class="btn ok" onclick="activateLibrary('${l.id}')">Ativar</button><button class="btn danger" onclick="delLib('${l.id}')">Excluir</button></div></td></tr>`}).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma biblioteca importada.</div>'}
+async function delLib(x){if(!confirm('Excluir biblioteca e composições vinculadas?'))return;const l=state.libraries.find(a=>a.id===x);if(l&&l.storage==='blob'){try{await deleteBlobLibrary(x)}catch(e){if(!confirm('Não foi possível excluir no Netlify Blobs: '+(e?.message||e)+'\n\nRemover apenas deste navegador?'))return}}state.libraries=state.libraries.filter(l=>l.id!==x);state.compositions=state.compositions.filter(c=>c.libraryId!==x);state.supplies=state.supplies.filter(s=>s.libraryId!==x);if(state.settings.activeLibraryId===x)state.settings.activeLibraryId='';save()}
 
 function renderSupplies(){let q=(insQ?.value||'').toLowerCase(),list=state.supplies.filter(s=>JSON.stringify(s).toLowerCase().includes(q));insList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Código</th><th>Descrição</th><th>Categoria</th><th>Un.</th><th class="right">Preço</th><th>Fonte</th><th>Ações</th></tr></thead><tbody>${list.map(s=>`<tr><td>${esc(s.code)}</td><td>${esc(s.description)}</td><td>${esc(s.category)}</td><td>${esc(s.unit)}</td><td class="right strong">${br(s.price)}</td><td>${esc(s.source)}</td><td class="action-cell"><div class="action-stack"><button class="btn soft" onclick="openSupply('${s.id}')">Editar</button><button class="btn blue" onclick="printSupply('${s.id}')">Imprimir</button><button class="btn danger" onclick="delSupply('${s.id}')">Excluir</button></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhum insumo cadastrado.</div>'}
 function openSupply(x=''){let s=state.supplies.find(a=>a.id===x);supplyTitle.textContent=s?'Editar insumo':'Novo insumo';supId.value=s?.id||'';supCode.value=s?.code||'';supDesc.value=s?.description||'';supUnit.value=s?.unit||'';supCat.value=s?.category||'Material';supPrice.value=s?.price??'';supFonte.value=s?.source||state.settings.fonte;supMes.value=s?.baseDate||new Date().toISOString().slice(0,7);supObs.value=s?.note||'';openM('supplyModal')}
@@ -1674,11 +1728,11 @@ function openM(x){document.getElementById(x).classList.add('active')}function cl
 function download(c,name,type){let blob=new Blob([c],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
 function safe(s){return String(s||'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_')}
 function exportBackup(){download(JSON.stringify(state,null,2),'backup_composicoes_obras_'+new Date().toISOString().slice(0,10)+'.json','application/json')}
-function importBackup(){let f=backupFile.files[0];if(!f){alert('Selecione JSON.');return}if(!confirm('Substituir dados atuais pelo backup?'))return;let r=new FileReader();r.onload=e=>{try{state=Object.assign(base(),JSON.parse(e.target.result));save();alert('Backup importado.')}catch(err){alert('Arquivo inválido.')}};r.readAsText(f)}
+function importBackup(){let f=backupFile.files[0];if(!f){alert('Selecione JSON.');return}if(!confirm('Substituir dados atuais pelo backup?'))return;let r=new FileReader();r.onload=e=>{try{state=mergeState(JSON.parse(e.target.result));save();alert('Backup importado.')}catch(err){alert('Arquivo inválido.')}};r.readAsText(f)}
 function demo(){if(!confirm('Adicionar dados de exemplo?'))return;let lib={id:id('lib'),name:'Exemplo SINAPI SC 05-2026 Não Desonerado',source:'SINAPI',uf:'SC',baseDate:'2026-05',type:'Não desonerado',compositionCount:2,supplyCount:4};let s=[{id:id('sup'),code:'MO-001',description:'Pedreiro',unit:'h',category:'Mão de obra',price:28,source:'Exemplo',baseDate:'2026-05',note:''},{id:id('sup'),code:'MO-002',description:'Servente',unit:'h',category:'Mão de obra',price:18,source:'Exemplo',baseDate:'2026-05',note:''},{id:id('sup'),code:'MAT-001',description:'Bloco cerâmico',unit:'un',category:'Material',price:1.2,source:'Exemplo',baseDate:'2026-05',note:''},{id:id('sup'),code:'MAT-002',description:'Tinta acrílica',unit:'l',category:'Material',price:32,source:'Exemplo',baseDate:'2026-05',note:''}];let a=s[0],b=s[1],c=s[2],d=s[3];let comps=[mk(lib.id,'87503','Alvenaria de vedação em bloco cerâmico','m²',[[a,.8,0],[b,.9,0],[c,25,5]]),mk(lib.id,'88489','Pintura acrílica em parede','m²',[[b,.2,0],[d,.18,10]])];state.libraries.push(lib);state.supplies.push(...s);state.compositions.push(...comps);state.settings.activeLibraryId=lib.id;save()}
 function mk(lid,code,desc,unit,arr){let items=arr.map(([s,coef,w])=>({id:id('item'),supplyId:s.id,code:s.code,description:s.description,category:s.category,unit:s.unit,coefficient:coef,price:s.price,waste:w}));return{id:id('comp'),code,description:desc,unit,source:'SINAPI',uf:'SC',baseDate:'2026-05',type:'Não desonerado',note:'Composição exemplo.',libraryId:lid,items,cost:items.reduce((a,i)=>a+itemTotal(i),0)}}
 function clearAll(){if(confirm('Apagar todos os dados?')){state=base();localStorage.removeItem(KEY);save()}}
-loadFromDb();
+loadFromDb().then(()=>syncBlobLibraries().then(()=>loadActiveBlobLibrary()).catch(e=>console.warn('Blobs não sincronizou',e)));
 impMes.value=new Date().toISOString().slice(0,7);supMes.value=new Date().toISOString().slice(0,7);cMes.value=new Date().toISOString().slice(0,7);if(typeof ofMes!=='undefined')ofMes.value=new Date().toISOString().slice(0,7);if(typeof anMes!=='undefined')anMes.value=new Date().toISOString().slice(0,7);
 function updateImpName(){if(!impNome.value)impNome.value=`${impFonte.value} ${impUf.value} ${impMes.value||new Date().toISOString().slice(0,7)} ${impTipo.value}`}
 ['impFonte','impUf','impMes','impTipo'].forEach(x=>document.getElementById(x).addEventListener('change',updateImpName));updateImpName();render();
