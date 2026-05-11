@@ -98,6 +98,9 @@
     body.dark .ico{background:#12304d;color:#bae6fd}body.dark .badge{background:#243247;color:#e2e8f0}body.dark .sc{background:#12351f;color:#bbf7d0}body.dark .src{background:#142b4a;color:#bfdbfe}body.dark .prop{background:#3a2b0f;color:#fde68a}
     body.dark .modal-bg{background:rgba(0,0,0,.72)}body.dark .close{background:#1f2937;color:#e5edf8}
     body.dark .import-option.active{background:#0d2f2c;border-color:var(--primary)}body.dark .import-option .tag{background:#243247;color:#cbd5e1}body.dark .import-option.active .tag{background:#134e4a;color:#99f6e4}
+    body.auth-required .app{display:none}
+    body.auth-required #authModal{display:flex}
+    body.auth-required #authModal .close,body.auth-required #authCancelBtn{display:none}
     @media(max-width:1050px){.app{grid-template-columns:1fr}aside{position:relative;height:auto}.g4,.g3{grid-template-columns:repeat(2,1fr)}.form{grid-template-columns:repeat(2,1fr)}.span3,.span4{grid-column:span 2}.summary{grid-template-columns:repeat(2,1fr)}#budgetModal.modal-bg{left:0;width:100vw}#compModal.nested-comp{inset:12px;width:auto}}
     @media(max-width:720px){main{padding:18px}.top{flex-direction:column}.g4,.g3,.g2,.form,.summary{grid-template-columns:1fr}.span2,.span3,.span4{grid-column:span 1}.search{min-width:100%}.btn{width:100%}.action-stack .btn{width:auto}.action-cell{min-width:258px}}
   </style>
@@ -306,15 +309,15 @@
           <div><label>&nbsp;</label><button class="btn pri" onclick="createFirstAdmin()">Tornar meu login gestor</button></div>
         </div>
       </div>
-      <div class="card" id="userAdminPanel" style="display:none"><h3>Preparar usuário</h3><p>Informe o e-mail do usuário. Você pode definir uma senha inicial ou deixar em branco para ele criar a própria senha no botão Entrar/Criar conta. Usuários novos recebem somente as bases globais; marque a opção abaixo apenas para copiar os dados atuais, por exemplo para a Philar.</p>
+      <div class="card" id="userAdminPanel" style="display:none"><h3>Criar empresa e usuário</h3><p>Cadastre a empresa, o e-mail de acesso e a senha inicial. Usuários novos recebem somente as bases globais; marque a opção abaixo apenas para copiar os dados atuais, por exemplo para a Philar.</p>
         <div class="form">
           <div><label>E-mail</label><input type="email" id="newUserEmail" placeholder="usuario@empresa.com"></div>
-          <div><label>Nome/Empresa</label><input id="newUserName" placeholder="Philar Construções"></div>
+          <div><label>Empresa</label><input id="newUserName" placeholder="Philar Construções"></div>
           <div><label>Perfil</label><select id="newUserRole"><option value="user">Usuário</option><option value="admin">Gestor</option></select></div>
-          <div><label>Senha inicial opcional</label><input type="password" id="newUserPass" placeholder="mínimo 6 caracteres"></div>
+          <div><label>Senha inicial</label><input type="password" id="newUserPass" placeholder="mínimo 6 caracteres"></div>
           <div class="span4"><label><input type="checkbox" id="newUserSeed" style="width:auto;margin-right:8px">Copiar para este usuário os orçamentos, composições próprias e empresa que estão neste navegador</label></div>
         </div>
-        <div class="btns"><button class="btn pri" onclick="createManagedUser()">Preparar usuário</button><button class="btn soft" onclick="loadManagedUsers()">Atualizar lista</button></div>
+        <div class="btns"><button class="btn pri" onclick="createManagedUser()">Criar empresa/usuário</button><button class="btn soft" onclick="loadManagedUsers()">Atualizar lista</button></div>
         <div id="managedUsersList" style="margin-top:14px"></div>
       </div>
     </section>
@@ -344,14 +347,14 @@
 </div></div>
 
 <div class="modal-bg" id="authModal"><div class="modal" style="width:min(560px,96vw)">
-  <div class="modal-head"><div><h3>Acesso do usuário</h3><p class="muted small">Orçamentos, composições próprias e dados da empresa ficam separados por usuário.</p></div><button class="close" onclick="closeM('authModal')">×</button></div>
+  <div class="modal-head"><div><h3>Acesso ao ORCC</h3><p class="muted small">Entre como gestor ou usuário de empresa. O app só abre após autenticação.</p></div><button class="close" onclick="closeM('authModal')">×</button></div>
   <div class="form">
     <div class="span4"><label>E-mail</label><input type="email" id="authEmail" autocomplete="email"></div>
     <div class="span4"><label>Senha</label><input type="password" id="authPass" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginUser()"></div>
     <div class="span4"><label>Nome, para novo cadastro</label><input id="authName" autocomplete="name" placeholder="Opcional"></div>
   </div>
   <div class="notice" id="authMsg" style="display:none;margin-top:14px"></div>
-  <div class="btns"><button class="btn pri" onclick="loginUser()">Entrar</button><button class="btn soft" onclick="signupUser()">Criar conta</button><button class="btn soft" onclick="closeM('authModal')">Cancelar</button></div>
+  <div class="btns"><button class="btn pri" onclick="loginUser()">Entrar</button><button class="btn soft" onclick="signupUser()">Criar conta de gestor</button><button class="btn soft" id="authCancelBtn" onclick="closeM('authModal')">Cancelar</button></div>
 </div></div>
 
 <div class="modal-bg" id="supplyModal"><div class="modal">
@@ -549,6 +552,12 @@ function renderAuthCard(){
   authCard.innerHTML='<b>Usuário:</b> modo local<br><span class="small">Entre para salvar orçamentos e composições próprias na nuvem.</span><div class="btns"><button class="btn pri" onclick="openAuth()">Entrar</button></div>';
  }
 }
+function updateAuthGate(){
+ const locked=!authUser;
+ document.body.classList.toggle('auth-required',locked);
+ if(locked&&typeof authModal!=='undefined')authModal.classList.add('active');
+ if(!locked&&typeof authModal!=='undefined')authModal.classList.remove('active');
+}
 async function adminApi(action,payload={}){
  const token=authToken();
  const res=await fetch('/.netlify/functions/users-admin',{method:'POST',headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},body:JSON.stringify({action,...payload})});
@@ -584,6 +593,15 @@ function renderUserAdminUi(){
   userAdminPanel.style.display='none';
  }
 }
+function cleanCompanyInitialData(companyName){
+ return {
+  version:1,
+  settings:{company:{...emptyCompany(),name:companyName||''}},
+  budgets:[],
+  compositions:[],
+  supplies:[]
+ };
+}
 async function createFirstAdmin(){
  try{
   if(!authUser){alert('Primeiro clique em Entrar, crie ou acesse sua conta, e depois confirme o gestor.');openAuth();return}
@@ -594,9 +612,11 @@ async function createFirstAdmin(){
 }
 async function createManagedUser(){
  try{
-  const initialData=newUserSeed.checked?userPrivateState():null;
+  if(!newUserEmail.value.trim()||!newUserName.value.trim()){alert('Informe o e-mail e o nome da empresa.');return}
+  if((newUserPass.value||'').length<6){alert('Informe uma senha inicial com pelo menos 6 caracteres.');return}
+  const initialData=newUserSeed.checked?userPrivateState():cleanCompanyInitialData(newUserName.value.trim());
   const data=await adminApi('create-user',{email:newUserEmail.value.trim(),name:newUserName.value.trim(),role:newUserRole.value,password:newUserPass.value,initialData});
-  alert('Usuário preparado: '+(data.user?.email||newUserEmail.value)+(newUserPass.value?'. Ele já pode entrar com a senha inicial informada.':'. Ele deve clicar em Criar conta usando este mesmo e-mail para definir a senha.'));
+  alert('Empresa/usuário criado: '+(data.user?.email||newUserEmail.value)+'. Ele já pode entrar com a senha inicial informada.');
   newUserEmail.value='';newUserName.value='';newUserPass.value='';newUserSeed.checked=false;newUserRole.value='user';
   await loadManagedUsers();
  }catch(e){alert('Não foi possível criar o usuário.\n\nDetalhe: '+(e?.message||e))}
@@ -604,7 +624,7 @@ async function createManagedUser(){
 async function loadManagedUsers(){
  try{
   const data=await adminApi('list-users');
-  managedUsersList.innerHTML=(data.users||[]).length?`<div class="table"><table><thead><tr><th>E-mail</th><th>Nome</th><th>Perfil</th><th>Dados iniciais</th><th>Acesso</th></tr></thead><tbody>${data.users.map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.name||'')}</td><td>${esc((u.roles&&u.roles[0])||u.role||'user')}</td><td>${u.seeded?'Copiados':'Limpo'}</td><td>${u.passwordReady?'Senha inicial definida':'Criar conta no primeiro acesso'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhum usuário preparado.</div>';
+  managedUsersList.innerHTML=(data.users||[]).length?`<div class="table"><table><thead><tr><th>E-mail</th><th>Empresa</th><th>Perfil</th><th>Dados iniciais</th><th>Acesso</th></tr></thead><tbody>${data.users.map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.name||'')}</td><td>${esc((u.roles&&u.roles[0])||u.role||'user')}</td><td>${u.seeded?'Copiados':'Limpo'}</td><td>${u.passwordReady?'Senha inicial definida':'Pendente'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma empresa cadastrada.</div>';
  }catch(e){managedUsersList.innerHTML='<div class="notice warn">Não foi possível listar usuários: '+esc(e?.message||e)+'</div>'}
 }
 function openAuth(){authMsg.style.display='none';openM('authModal');setTimeout(()=>authEmail.focus(),80)}
@@ -615,6 +635,7 @@ async function loginUser(){
   authMessage('Entrando...');
   authUser=await window.orccAuth.login(authEmail.value.trim(),authPass.value);
   closeM('authModal');
+  updateAuthGate();
   renderAuthCard();
   await loadUserCloud();
   await refreshAppAdminStatus();
@@ -626,6 +647,7 @@ async function signupUser(){
   authMessage('Criando conta...');
   authUser=await window.orccAuth.signup(authEmail.value.trim(),authPass.value,{full_name:authName.value.trim()});
   closeM('authModal');
+  updateAuthGate();
   renderAuthCard();
   await loadUserCloud();
   await refreshAppAdminStatus();
@@ -637,6 +659,7 @@ async function logoutUser(){
  try{await saveUserCloud(true);await window.orccAuth.logout()}catch(e){}
  authUser=null;
  appAdminStatus={...appAdminStatus,isAdmin:false,user:null};
+ updateAuthGate();
  renderAuthCard();
  renderUserAdminUi();
  render();
@@ -646,7 +669,8 @@ async function initAuth(){
  authReady=true;
  try{await window.orccAuth.handleAuthCallback()}catch(e){console.warn('Callback de autenticação não processado',e)}
  try{authUser=await window.orccAuth.getUser()}catch(e){authUser=null}
- window.orccAuth.onAuthChange?.((event,user)=>{authUser=user;renderAuthCard();if(user)loadUserCloud()});
+ window.orccAuth.onAuthChange?.((event,user)=>{authUser=user;updateAuthGate();renderAuthCard();if(user)loadUserCloud()});
+ updateAuthGate();
  renderAuthCard();
  if(authUser)await loadUserCloud();
  await refreshAppAdminStatus();
@@ -1246,6 +1270,7 @@ function fillAnalyticExample(){
 
 function render(){
  applyTheme();
+ updateAuthGate();
  renderAuthCard();
  renderUserAdminUi();
  stLib.textContent=state.libraries.length;stComp.textContent=state.compositions.length;stIns.textContent=state.supplies.length;stOrc.textContent=state.budgets.length;
