@@ -302,21 +302,18 @@
     <section id="usuarios" class="section">
       <div class="card"><h3>Gestor do app</h3><p id="adminStatus">Verificando configuração de gestor...</p>
         <div class="form" id="bootstrapAdminForm">
-          <div><label>E-mail do gestor</label><input type="email" id="bootEmail" placeholder="gestor@empresa.com"></div>
-          <div><label>Nome</label><input id="bootName" placeholder="Gestor ORCC"></div>
-          <div><label>Senha inicial</label><input type="password" id="bootPass" placeholder="mínimo 6 caracteres"></div>
-          <div><label>&nbsp;</label><button class="btn pri" onclick="createFirstAdmin()">Criar gestor inicial</button></div>
+          <div class="span3"><label>Login que será gestor</label><input id="bootName" placeholder="Entre/crie uma conta e depois confirme aqui" readonly></div>
+          <div><label>&nbsp;</label><button class="btn pri" onclick="createFirstAdmin()">Tornar meu login gestor</button></div>
         </div>
       </div>
-      <div class="card" id="userAdminPanel" style="display:none"><h3>Criar usuário</h3><p>Usuários novos recebem somente as bases globais. Marque a opção abaixo apenas para copiar os orçamentos atuais, por exemplo para a Philar.</p>
+      <div class="card" id="userAdminPanel" style="display:none"><h3>Preparar usuário</h3><p>Informe o e-mail do usuário. Ele cria a própria senha no botão Entrar/Criar conta. Usuários novos recebem somente as bases globais; marque a opção abaixo apenas para copiar os dados atuais, por exemplo para a Philar.</p>
         <div class="form">
           <div><label>E-mail</label><input type="email" id="newUserEmail" placeholder="usuario@empresa.com"></div>
           <div><label>Nome/Empresa</label><input id="newUserName" placeholder="Philar Construções"></div>
-          <div><label>Senha inicial</label><input type="password" id="newUserPass" placeholder="mínimo 6 caracteres"></div>
           <div><label>Perfil</label><select id="newUserRole"><option value="user">Usuário</option><option value="admin">Gestor</option></select></div>
           <div class="span4"><label><input type="checkbox" id="newUserSeed" style="width:auto;margin-right:8px">Copiar para este usuário os orçamentos, composições próprias e empresa que estão neste navegador</label></div>
         </div>
-        <div class="btns"><button class="btn pri" onclick="createManagedUser()">Criar usuário</button><button class="btn soft" onclick="loadManagedUsers()">Atualizar lista</button></div>
+        <div class="btns"><button class="btn pri" onclick="createManagedUser()">Preparar usuário</button><button class="btn soft" onclick="loadManagedUsers()">Atualizar lista</button></div>
         <div id="managedUsersList" style="margin-top:14px"></div>
       </div>
     </section>
@@ -551,7 +548,8 @@ function renderUserAdminUi(){
  if(typeof usersNav!=='undefined')usersNav.style.display=(!appAdminStatus.initialized||appAdminStatus.isAdmin)?'block':'none';
  if(typeof adminStatus==='undefined')return;
  if(!appAdminStatus.initialized){
-  adminStatus.textContent='Nenhum gestor criado. Crie o primeiro login de administrador do app.';
+  adminStatus.textContent=authUser?'Nenhum gestor criado. Confirme abaixo para tornar o login atual o gestor inicial do app.':'Nenhum gestor criado. Primeiro entre ou crie uma conta no card Usuário; depois volte aqui e torne esse login gestor.';
+  if(typeof bootName!=='undefined')bootName.value=authUser?(authUser.email||authUser.name||'Login atual'):'';
   bootstrapAdminForm.style.display='grid';
   userAdminPanel.style.display='none';
  }else if(appAdminStatus.isAdmin){
@@ -566,26 +564,25 @@ function renderUserAdminUi(){
 }
 async function createFirstAdmin(){
  try{
-  const data=await adminApi('bootstrap-admin',{email:bootEmail.value.trim(),password:bootPass.value,name:bootName.value.trim()||'Gestor ORCC'});
-  alert('Gestor criado: '+(data.user?.email||bootEmail.value)+'. Agora entre com esse login no card Usuário.');
+  if(!authUser){alert('Primeiro clique em Entrar, crie ou acesse sua conta, e depois confirme o gestor.');openAuth();return}
+  const data=await adminApi('bootstrap-admin',{name:authUser.name||authUser.email||'Gestor ORCC'});
+  alert('Gestor criado: '+(data.user?.email||authUser.email)+'.');
   await refreshAppAdminStatus();
-  openAuth();
-  authEmail.value=bootEmail.value.trim();
  }catch(e){alert('Não foi possível criar o gestor.\n\nDetalhe: '+(e?.message||e))}
 }
 async function createManagedUser(){
  try{
   const initialData=newUserSeed.checked?userPrivateState():null;
-  const data=await adminApi('create-user',{email:newUserEmail.value.trim(),password:newUserPass.value,name:newUserName.value.trim(),role:newUserRole.value,initialData});
-  alert('Usuário criado: '+(data.user?.email||newUserEmail.value));
-  newUserEmail.value='';newUserName.value='';newUserPass.value='';newUserSeed.checked=false;newUserRole.value='user';
+  const data=await adminApi('create-user',{email:newUserEmail.value.trim(),name:newUserName.value.trim(),role:newUserRole.value,initialData});
+  alert('Usuário preparado: '+(data.user?.email||newUserEmail.value)+'. Agora essa pessoa deve criar/entrar com este e-mail para receber os dados definidos.');
+  newUserEmail.value='';newUserName.value='';newUserSeed.checked=false;newUserRole.value='user';
   await loadManagedUsers();
  }catch(e){alert('Não foi possível criar o usuário.\n\nDetalhe: '+(e?.message||e))}
 }
 async function loadManagedUsers(){
  try{
   const data=await adminApi('list-users');
-  managedUsersList.innerHTML=(data.users||[]).length?`<div class="table"><table><thead><tr><th>E-mail</th><th>Nome</th><th>Perfil</th></tr></thead><tbody>${data.users.map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.name||'')}</td><td>${esc((u.roles&&u.roles[0])||u.role||'user')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhum usuário listado.</div>';
+  managedUsersList.innerHTML=(data.users||[]).length?`<div class="table"><table><thead><tr><th>E-mail</th><th>Nome</th><th>Perfil</th><th>Dados iniciais</th></tr></thead><tbody>${data.users.map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.name||'')}</td><td>${esc((u.roles&&u.roles[0])||u.role||'user')}</td><td>${u.seeded?'Copiados':'Limpo'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhum usuário preparado.</div>';
  }catch(e){managedUsersList.innerHTML='<div class="notice warn">Não foi possível listar usuários: '+esc(e?.message||e)+'</div>'}
 }
 function openAuth(){authMsg.style.display='none';openM('authModal');setTimeout(()=>authEmail.focus(),80)}

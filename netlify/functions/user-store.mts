@@ -2,6 +2,8 @@ import { getStore } from "@netlify/blobs";
 import { getUser } from "@netlify/identity";
 
 const STORE_NAME = "orcc-users";
+const ADMIN_STORE = "orcc-admin";
+const ADMIN_KEY = "config.json";
 
 function json(data: unknown, status = 200) {
   return Response.json(data, {
@@ -21,6 +23,23 @@ function store() {
   return getStore({ name: STORE_NAME, consistency: "strong" });
 }
 
+function adminStore() {
+  return getStore({ name: ADMIN_STORE, consistency: "strong" });
+}
+
+function emptyPrivateData() {
+  return { version: 1, settings: {}, budgets: [], compositions: [], supplies: [], initializedFromInvite: true };
+}
+
+async function promotePendingAdmin(userId: string) {
+  const cfg = (await adminStore().get(ADMIN_KEY, { type: "json" }) as { admins?: string[]; managed?: unknown[]; createdAt?: string } | null) || { admins: [] };
+  if ((cfg.admins || []).includes(userId)) return;
+  const now = new Date().toISOString();
+  await adminStore().setJSON(ADMIN_KEY, { ...cfg, admins: [...(cfg.admins || []), userId], updatedAt: now, createdAt: cfg.createdAt || now }, {
+    metadata: { updatedAt: now, contentType: "application/json" }
+  });
+}
+
 async function requireUser() {
   const user = await getUser();
   if (!user?.id) return null;
@@ -36,6 +55,35 @@ export default async (req: Request) => {
 
     if (req.method === "GET") {
       const data = await store().get(key, { type: "json" });
+      if (!data && user.email) {
+        const pendingKey = `pending/${safeId(user.email.toLowerCase())}.json`;
+        const pending = await store().get(pendingKey, { type: "json" }) as { initialData?: unknown; managed?: { role?: string } } | null;
+        if (pending) {
+          const now = new Date().toISOString();
+          const claimed = {
+            ...(typeof pending.initialData === "object" && pending.initialData ? pending.initialData as Record<string, unknown> : emptyPrivateData()),
+            userId: user.id,
+            userEmail: user.email,
+            userRole: pending.managed?.role || "user",
+            updatedAt: now,
+            seededByAdmin: !!pending.initialData
+          };
+          await store().setJSON(key, claimed, {
+            metadata: {
+              userId: user.id,
+              email: user.email || "",
+              updatedAt: now,
+              contentType: "application/json"
+            }
+          });
+          if (pending.managed?.role === "admin") await promotePendingAdmin(user.id);
+          return json({
+            ok: true,
+            user: { id: user.id, email: user.email, name: user.name, roles: user.roles || [] },
+            data: claimed
+          });
+        }
+      }
       return json({
         ok: true,
         user: { id: user.id, email: user.email, name: user.name, roles: user.roles || [] },

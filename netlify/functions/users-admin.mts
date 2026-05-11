@@ -1,12 +1,22 @@
 import { getStore } from "@netlify/blobs";
-import { admin, getUser } from "@netlify/identity";
+import { getUser } from "@netlify/identity";
 
 const USER_STORE = "orcc-users";
 const ADMIN_STORE = "orcc-admin";
 const ADMIN_KEY = "config.json";
 
+type ManagedUser = {
+  email: string;
+  name: string;
+  role: string;
+  seeded: boolean;
+  createdBy?: string;
+  createdAt: string;
+};
+
 type AdminConfig = {
   admins: string[];
+  managed?: ManagedUser[];
   createdAt?: string;
   updatedAt?: string;
 };
@@ -34,7 +44,7 @@ function userStore() {
 }
 
 async function readAdminConfig(): Promise<AdminConfig> {
-  return ((await adminStore().get(ADMIN_KEY, { type: "json" })) as AdminConfig | null) || { admins: [] };
+  return ((await adminStore().get(ADMIN_KEY, { type: "json" })) as AdminConfig | null) || { admins: [], managed: [] };
 }
 
 async function writeAdminConfig(config: AdminConfig) {
@@ -53,19 +63,17 @@ async function currentIsAdmin(config?: AdminConfig) {
   return { user, ok };
 }
 
-async function saveInitialUserData(userId: string, email: string | undefined, data: unknown) {
-  if (!data) return;
+async function savePendingUserData(email: string, data: unknown, managed: ManagedUser) {
   const now = new Date().toISOString();
-  await userStore().setJSON(`users/${safeId(userId)}.json`, {
-    ...(typeof data === "object" && data ? data as Record<string, unknown> : {}),
-    userId,
-    userEmail: email || "",
+  const normalizedEmail = email.trim().toLowerCase();
+  await userStore().setJSON(`pending/${safeId(normalizedEmail)}.json`, {
+    initialData: typeof data === "object" && data ? data : null,
+    managed,
     updatedAt: now,
-    seededByAdmin: true
+    seededByAdmin: !!data
   }, {
     metadata: {
-      userId,
-      email: email || "",
+      email: normalizedEmail,
       updatedAt: now,
       contentType: "application/json"
     }
@@ -88,64 +96,53 @@ export default async (req: Request) => {
       });
     }
 
-    if (req.method !== "POST") return json({ ok: false, mensagem: "Método não permitido." }, 405);
+    if (req.method !== "POST") return json({ ok: false, mensagem: "Metodo nao permitido." }, 405);
     const payload = await req.json();
 
     if (payload.action === "bootstrap-admin") {
-      if (config.admins.length) return json({ ok: false, mensagem: "O gestor inicial já foi criado." }, 409);
-      const email = String(payload.email || "").trim();
-      const password = String(payload.password || "");
-      const name = String(payload.name || "Gestor ORCC").trim();
-      if (!email || password.length < 6) return json({ ok: false, mensagem: "Informe e-mail e senha com pelo menos 6 caracteres." }, 400);
+      if (config.admins.length) return json({ ok: false, mensagem: "O gestor inicial ja foi criado." }, 409);
+      const user = await getUser();
+      if (!user?.id) return json({ ok: false, mensagem: "Entre ou crie uma conta antes de tornar este login gestor." }, 401);
 
-      const user = await admin.createUser({
-        email,
-        password,
-        data: {
-          role: "admin",
-          app_metadata: { roles: ["admin"] },
-          user_metadata: { full_name: name }
-        }
-      });
-
-      await writeAdminConfig({ admins: [user.id] });
-      return json({ ok: true, user: { id: user.id, email: user.email, name: user.name, roles: user.roles || ["admin"] } });
+      const managed: ManagedUser = {
+        email: user.email || "",
+        name: user.name || String(payload.name || "Gestor ORCC"),
+        role: "admin",
+        seeded: false,
+        createdAt: new Date().toISOString()
+      };
+      await writeAdminConfig({ ...config, admins: [user.id], managed: [managed] });
+      return json({ ok: true, user: { id: user.id, email: user.email, name: user.name, roles: ["admin"] } });
     }
 
     const auth = await currentIsAdmin(config);
-    if (!auth.ok) return json({ ok: false, mensagem: "Apenas gestor do app pode executar esta ação." }, 403);
+    if (!auth.ok) return json({ ok: false, mensagem: "Apenas gestor do app pode executar esta acao." }, 403);
 
     if (payload.action === "create-user") {
-      const email = String(payload.email || "").trim();
-      const password = String(payload.password || "");
+      const email = String(payload.email || "").trim().toLowerCase();
       const name = String(payload.name || "").trim();
       const role = payload.role === "admin" ? "admin" : "user";
-      if (!email || password.length < 6) return json({ ok: false, mensagem: "Informe e-mail e senha com pelo menos 6 caracteres." }, 400);
+      if (!email || !email.includes("@")) return json({ ok: false, mensagem: "Informe um e-mail valido." }, 400);
 
-      const user = await admin.createUser({
+      const managed: ManagedUser = {
         email,
-        password,
-        data: {
-          role,
-          app_metadata: { roles: [role] },
-          user_metadata: { full_name: name || email }
-        }
-      });
-
-      if (role === "admin" && !config.admins.includes(user.id)) {
-        await writeAdminConfig({ ...config, admins: [...config.admins, user.id] });
-      }
-
-      await saveInitialUserData(user.id, user.email, payload.initialData);
-      return json({ ok: true, user: { id: user.id, email: user.email, name: user.name, roles: user.roles || [role] } });
+        name: name || email,
+        role,
+        seeded: !!payload.initialData,
+        createdBy: auth.user?.email || auth.user?.id,
+        createdAt: new Date().toISOString()
+      };
+      const others = (config.managed || []).filter(u => u.email.toLowerCase() !== email);
+      await writeAdminConfig({ ...config, managed: [...others, managed] });
+      await savePendingUserData(email, payload.initialData, managed);
+      return json({ ok: true, user: managed });
     }
 
     if (payload.action === "list-users") {
-      const users = await admin.listUsers({ page: 1, perPage: 100 });
-      return json({ ok: true, users: users.map(u => ({ id: u.id, email: u.email, name: u.name, roles: u.roles || [], role: u.role })) });
+      return json({ ok: true, users: config.managed || [] });
     }
 
-    return json({ ok: false, mensagem: "Ação inválida." }, 400);
+    return json({ ok: false, mensagem: "Acao invalida." }, 400);
   } catch (error) {
     return json({ ok: false, mensagem: error instanceof Error ? error.message : String(error) }, 500);
   }
