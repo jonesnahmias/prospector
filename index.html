@@ -182,7 +182,7 @@
           <div class="notice warn">Importe CSV, TXT, XLS ou XLSX. Para arquivos Excel, o app lê a primeira planilha com dados.</div>
           <div class="form">
             <div><label>Fonte</label><select id="impFonte"><option>SINAPI</option><option>SICRO</option><option>ORSE</option><option>SEINFRA</option><option>CPOS</option><option>PROPRIA</option></select></div>
-            <div><label>UF</label><select id="impUf"><option value="SC">SC - Santa Catarina</option><option value="SE">SE - Sergipe</option><option>RS</option><option>PR</option><option>SP</option><option>MG</option><option>RJ</option><option>OUTRA</option></select></div>
+            <div><label>UF</label><select id="impUf"><option value="SC">SC - Santa Catarina</option><option value="CE">CE - Ceará</option><option value="SE">SE - Sergipe</option><option>RS</option><option>PR</option><option>SP</option><option>MG</option><option>RJ</option><option>OUTRA</option></select></div>
             <div><label>Mês-base</label><input type="month" id="impMes"></div>
             <div><label>Tipo</label><select id="impTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option><option>Próprio</option></select></div>
             <div class="span2"><label>Nome da biblioteca</label><input id="impNome" placeholder="Ex.: SINAPI SC 05-2026 Não Desonerado"></div>
@@ -200,7 +200,7 @@
 
           <div class="form">
             <div><label>Base oficial</label><select id="ofFonte"><option value="SINAPI">SINAPI</option><option value="SICRO">SICRO</option><option value="ORSE">ORSE</option><option value="SEINFRA">SEINFRA</option><option value="CPOS">CPOS</option></select></div>
-            <div><label>UF padrão</label><select id="ofUf"><option value="SC">SC - Santa Catarina</option><option value="SE">SE - Sergipe</option><option value="RS">RS</option><option value="PR">PR</option><option value="SP">SP</option><option value="MG">MG</option><option value="RJ">RJ</option><option value="OUTRA">Outra</option></select></div>
+            <div><label>UF padrão</label><select id="ofUf"><option value="SC">SC - Santa Catarina</option><option value="CE">CE - Ceará</option><option value="SE">SE - Sergipe</option><option value="RS">RS</option><option value="PR">PR</option><option value="SP">SP</option><option value="MG">MG</option><option value="RJ">RJ</option><option value="OUTRA">Outra</option></select></div>
             <div><label>Mês-base</label><input type="month" id="ofMes"></div>
             <div><label>Tipo</label><select id="ofTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option></select></div>
             <div class="span2"><label>Termo ORSE</label><input id="ofTermo" placeholder="Ex.: concreto, pintura, telha"></div>
@@ -232,7 +232,7 @@
 
           <div class="form">
             <div><label>Fonte</label><select id="anFonte"><option>SINAPI</option><option>SICRO</option><option>PROPRIA</option></select></div>
-            <div><label>UF</label><select id="anUf"><option value="SC">SC - Santa Catarina</option><option>RS</option><option>PR</option><option>SP</option><option>OUTRA</option></select></div>
+            <div><label>UF</label><select id="anUf"><option value="SC">SC - Santa Catarina</option><option value="CE">CE - Ceará</option><option>RS</option><option>PR</option><option>SP</option><option>OUTRA</option></select></div>
             <div><label>Mês-base</label><input type="month" id="anMes"></div>
             <div><label>Tipo</label><select id="anTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option><option>Próprio</option></select></div>
 
@@ -276,7 +276,7 @@
     <section id="config" class="section">
       <div class="card"><h3>Empresa e padrões</h3>
         <div class="form">
-          <div><label>UF padrão</label><select id="cfgUf"><option value="SC">SC - Santa Catarina</option><option>RS</option><option>PR</option><option>SP</option><option>OUTRA</option></select></div>
+          <div><label>UF padrão</label><select id="cfgUf"><option value="SC">SC - Santa Catarina</option><option value="CE">CE - Ceará</option><option>RS</option><option>PR</option><option>SP</option><option>OUTRA</option></select></div>
           <div><label>Fonte principal</label><select id="cfgFonte"><option>SINAPI</option><option>SICRO</option><option>ORSE</option><option>SEINFRA</option><option>PROPRIA</option></select></div>
           <div><label>Tipo padrão</label><select id="cfgTipo"><option>Não desonerado</option><option>Desonerado</option><option>Referencial</option></select></div>
           <div><label>BDI padrão (%)</label><input type="number" step="0.01" id="cfgBdi"></div>
@@ -569,6 +569,7 @@ function importRowsFromOfficial(rows,fileName,meta={}){
  if(meta.tipo)impTipo.value=meta.tipo;
  if(meta.name)impNome.value=meta.name;
  const fakeFile={name:fileName||'base_oficial.xlsx'};
+ if(parseSeinfraRows(rows,fakeFile))return;
  if(parseSicroAnalyticRows(rows,fakeFile))return;
  if(parseAnalyticSinapiRows(rows,fakeFile))return;
  if(parseGenericOfficialRows(rows,fakeFile,meta))return;
@@ -910,6 +911,8 @@ function rowsContainHeaders(rows,required){
 function excelRowsFromWorkbook(workbook){
  const sheets=workbook.SheetNames.map(name=>({name,sheet:workbook.Sheets[name]}));
  const read=s=>XLSX.utils.sheet_to_json(s,{header:1,raw:false,defval:''}).map(r=>r.map(c=>String(c??'').trim()));
+ const allRows=sheets.flatMap(x=>read(x.sheet));
+ if(allRows.slice(0,80).some(r=>String(r.join(' ')).includes('Relatório de Composições')||String(r.join(' ')).includes('Tabela de Preço de Insumos')))return allRows;
  for(const x of sheets){
    const rows=read(x.sheet);
    if(rowsContainHeaders(rows,['codigo_da_composicao','tipo_item','codigo_do_item','coeficiente']))return rows;
@@ -958,6 +961,87 @@ function sicroUf(v){
  const s=String(v||'').trim();
  const map={'Santa Catarina':'SC','Paraná':'PR','Parana':'PR','Rio Grande do Sul':'RS','São Paulo':'SP','Sao Paulo':'SP','Minas Gerais':'MG','Rio de Janeiro':'RJ'};
  return map[s]||s||'SC';
+}
+function parseSeinfraRows(rows,file){
+ const hasComp=rows.slice(0,80).some(r=>String(r.join(' ')).includes('Relatório de Composições'));
+ const hasIns=rows.slice(0,80).some(r=>String(r.join(' ')).includes('Tabela de Preço de Insumos'));
+ if(!hasComp&&!hasIns)return false;
+ const fileName=(file?.name||'').replace(/\.[^.]+$/,'');
+ const fonte='SEINFRA',uf=(impUf.value&&impUf.value!=='SC')?impUf.value:'CE',mes=impMes.value||new Date().toISOString().slice(0,7);
+ const tipo=/114,15|114\.15/.test(fileName)?'Sem desoneração':(/84,44|84\.44/.test(fileName)?'Com desoneração':(impTipo.value||'Referencial'));
+ const nome=impNome.value.trim()||`${fonte} ${uf} ${mes} ${tipo} - ${fileName}`;
+ const supplies=new Map(),comps=[],invalid=0;
+ const version=(rows.slice(0,20).flat().join(' ').match(/Tabela\s+0?(\d+(?:\.\d+)?)/i)||[])[1]||'028';
+ function catFromSection(s){
+   const nrm=norm(s);
+   if(nrm.includes('mao_de_obra'))return 'Mão de obra';
+   if(nrm.includes('equip'))return 'Equipamento';
+   if(nrm.includes('mater'))return 'Material';
+   if(nrm.includes('servico')||nrm.includes('auxiliar'))return 'Composição auxiliar';
+   return String(s||'Outro').trim()||'Outro';
+ }
+ function parseHeader(text){
+   const m=String(text||'').trim().match(/^([A-Z]\d{4})\s*-\s*(.+)\s+-\s*([A-Z0-9²³M\/\.]+)$/i);
+   if(!m)return null;
+   return {code:m[1].trim(),description:m[2].trim(),unit:m[3].trim()};
+ }
+ if(hasIns&&!hasComp){
+   let section='Material';
+   rows.forEach(r=>{
+     const c=r.map(x=>String(x??'').trim());
+     const a=c[0],b=c[1],u=c[2],p=c[3];
+     if(a&&!b&&!u&&!p&&!/^Insumo$/i.test(a))section=a;
+     if(/^I\d+/i.test(a)&&b){
+       const key=a.trim();
+       supplies.set(key,{id:id('sup'),libraryId:'',code:key,description:b,unit:u,category:catFromSection(section),price:n(p),source:fonte,baseDate:mes,note:`Importado da Tabela SEINFRA ${version}.`});
+     }
+   });
+   buffer={library:{id:id('lib'),name:nome,source:fonte,uf,baseDate:mes,type:tipo,createdAt:new Date().toISOString(),compositionCount:0,supplyCount:supplies.size,mode:'insumos'},compositions:[],supplies:[...supplies.values()],invalid,warnings:[]};
+   buffer.warnings=analyzeImportBuffer(buffer);
+   renderPrev();
+   return true;
+ }
+ let current=null,section='';
+ function finish(){
+   if(!current)return;
+   if(!n(current.cost))current.cost=current.items.reduce((a,i)=>a+itemTotal(i),0);
+   comps.push(current);
+   current=null;
+ }
+ rows.forEach(r=>{
+   const c=r.map(x=>String(x??'').trim());
+   const header=parseHeader(c[0]);
+   if(header){
+     finish();
+     current={id:id('comp'),code:header.code,description:header.description,unit:header.unit,source:fonte,uf,baseDate:mes,type:tipo,note:`Importado da composição SEINFRA ${version}.`,libraryId:'',items:[],cost:0};
+     section='';
+     return;
+   }
+   if(!current)return;
+   if(c[0]&&(!c[1]||/Unidade/i.test(c[2]||''))&&!/^I\d+/i.test(c[0])&&!/^C\d+/i.test(c[0])&&!/total/i.test(c[0])){
+     section=c[0];
+     return;
+   }
+   if(String(c[3]||'').toLowerCase().includes('valor geral')){
+     current.cost=n(c[5]||c[4]);
+     return;
+   }
+   if(!c[0]||!c[1]||!/^[IC]\d{4}$/i.test(c[0]))return;
+   const coef=n(c[3]),price=n(c[4]),total=n(c[5]);
+   if(!coef&&!total)return;
+   const cat=catFromSection(section);
+   const item={id:id('item'),supplyId:'',code:c[0],description:c[1],category:cat,unit:c[2],coefficient:coef||1,price:price||(coef?total/coef:total),waste:0};
+   current.items.push(item);
+   if(/^I/i.test(item.code)&&!supplies.has(item.code)){
+     supplies.set(item.code,{id:id('sup'),libraryId:'',code:item.code,description:item.description,unit:item.unit,category:cat,price:item.price,source:fonte,baseDate:mes,note:`Importado da composição SEINFRA ${version}.`});
+   }
+ });
+ finish();
+ if(!comps.length)return false;
+ buffer={library:{id:id('lib'),name:nome,source:fonte,uf,baseDate:mes,type:tipo,createdAt:new Date().toISOString(),compositionCount:comps.length,supplyCount:supplies.size,mode:'seinfra_composicoes'},compositions:comps,supplies:[...supplies.values()],invalid,warnings:[]};
+ buffer.warnings=analyzeImportBuffer(buffer);
+ renderPrev();
+ return true;
 }
 function parseSicroAnalyticRows(rows,file){
  const hasSicro=rows.slice(0,30).some(r=>String(r[0]||'').toUpperCase().includes('SISTEMA DE CUSTOS REFERENCIAIS DE OBRAS - SICRO'));
@@ -1101,6 +1185,7 @@ function parseAnalyticSinapiRows(rows,file){
 }function previewImport(){
  let file=impFile.files[0];if(!file){alert('Selecione um arquivo CSV, XLS ou XLSX.');return}
  loadImportRows(file,rows=>{if(rows.length<2){alert('Arquivo sem dados ou sem cabeçalho.');return}
+ if(parseSeinfraRows(rows,file))return;
  if(parseSicroAnalyticRows(rows,file))return;
  if(parseAnalyticSinapiRows(rows,file))return;
  let heads=rows[0].map(norm), data=rows.slice(1).map(cols=>{let o={};heads.forEach((h,i)=>o[h]=(cols[i]||'').trim());return o});
