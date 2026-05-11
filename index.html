@@ -418,9 +418,19 @@ function mergeBlobLibraryMeta(meta){
  const i=state.libraries.findIndex(l=>l.id===meta.id);
  i>=0?state.libraries[i]={...state.libraries[i],...meta}:state.libraries.push(meta);
 }
+function libDuplicateKey(l){return [l?.name,l?.source,l?.uf,l?.baseDate,l?.type].map(x=>String(x||'').trim().toLowerCase()).join('|')}
+function removeLocalDuplicateForBlob(meta){
+ if(!meta||meta.storage!=='blob')return;
+ const key=libDuplicateKey(meta),removeIds=state.libraries.filter(l=>l.id!==meta.id&&l.storage!=='blob'&&libDuplicateKey(l)===key).map(l=>l.id);
+ if(!removeIds.length)return;
+ const rm=new Set(removeIds);
+ state.libraries=state.libraries.filter(l=>!rm.has(l.id));
+ state.compositions=state.compositions.filter(c=>!rm.has(c.libraryId));
+ state.supplies=state.supplies.filter(s=>!rm.has(s.libraryId));
+}
 async function syncBlobLibraries(){
  const data=await blobRequest('list');
- (data.libraries||[]).forEach(mergeBlobLibraryMeta);
+ (data.libraries||[]).forEach(meta=>{mergeBlobLibraryMeta(meta);removeLocalDuplicateForBlob(meta)});
  render();
 }
 async function saveLibraryToBlob(library,compositions,supplies){
@@ -586,8 +596,9 @@ async function downloadOfficialBase(){
      return;
    }
    officialResult.innerHTML=`<b>Base encontrada:</b> ${esc(data.fileName||'arquivo oficial')}<br>Preparando prévia...`;
-   const meta={fonte:data.parametros?.fonte||ofFonte.value,uf:data.parametros?.uf||ofUf.value,mes:data.parametros?.mes||ofMes.value,tipo:data.parametros?.tipo||ofTipo.value};
-   const baseName=`${meta.fonte} ${meta.uf} ${meta.mes} ${meta.tipo}`;
+   const meta={fonte:data.parametros?.fonte||ofFonte.value,uf:data.parametros?.uf||ofUf.value,mes:data.parametros?.mes||ofMes.value,tipo:data.parametros?.tipo||ofTipo.value,termo:ofTermo.value};
+   const termName=meta.fonte==='ORSE'&&ofTermo.value?` - ${ofTermo.value.trim()}`:'';
+   const baseName=`${meta.fonte} ${meta.uf} ${meta.mes} ${meta.tipo}${termName}`;
    if(Array.isArray(data.rows)){
      importRowsFromOfficial(data.rows,data.fileName||'base_oficial.csv',{...meta,name:baseName});
      officialResult.innerHTML=`<b>Base preparada.</b><br>${esc(data.observacao||'Confira a prévia abaixo e confirme a importação.')}`;
@@ -888,8 +899,9 @@ function analyzeImportBuffer(b){
    const dup=state.compositions.filter(c=>incoming.has(String(c.code||'').trim()) && (!c.uf || c.uf===b.library.uf)).length;
    if(dup)warnings.push(dup+' composicao(oes) ja existem no cadastro atual com o mesmo codigo/UF. A importacao adicionara novos registros.');
  }
+ const willUseBlobs=mode!=='analitico_sinapi'&&mode!=='analitico_individual';
  const projectedKb=stateSizeKb()+Math.round(JSON.stringify(b).length/1024);
- if(projectedKb>4000)warnings.push('O armazenamento local ficara perto do limite do navegador (~'+projectedKb+' KB). Faca backup JSON com frequencia.');
+ if(projectedKb>4000&&!willUseBlobs)warnings.push('O armazenamento local ficara perto do limite do navegador (~'+projectedKb+' KB). Faca backup JSON com frequencia.');
  return warnings;
 }
 function rowsContainHeaders(rows,required){
@@ -1251,6 +1263,7 @@ async function confirmImport(){
    if(!ok)return;
  }
  mergeBlobLibraryMeta(lib);
+ removeLocalDuplicateForBlob(lib);
  state.supplies=state.supplies.filter(s=>s.libraryId!==lid).concat(buffer.supplies);
  state.compositions=state.compositions.filter(c=>c.libraryId!==lid).concat(buffer.compositions);
  state.settings.activeLibraryId=lid;
