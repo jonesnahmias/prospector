@@ -433,7 +433,28 @@ async function syncBlobLibraries(){
  (data.libraries||[]).forEach(meta=>{mergeBlobLibraryMeta(meta);removeLocalDuplicateForBlob(meta)});
  render();
 }
+function jsonBytes(value){try{return new Blob([JSON.stringify(value)]).size}catch(e){return JSON.stringify(value).length}}
+function makeRecordChunks(records,maxBytes=2500000){
+ const chunks=[];let current=[],size=2;
+ (records||[]).forEach(record=>{
+  const recordSize=jsonBytes(record)+1;
+  if(current.length&&size+recordSize>maxBytes){chunks.push(current);current=[];size=2}
+  current.push(record);size+=recordSize;
+ });
+ if(current.length)chunks.push(current);
+ return chunks;
+}
+async function saveLibraryToBlobChunked(library,compositions,supplies){
+ const compChunks=makeRecordChunks(compositions);
+ const supChunks=makeRecordChunks(supplies);
+ for(let i=0;i<compChunks.length;i++)await blobRequest('save-chunk',{library,kind:'compositions',index:i,records:compChunks[i]});
+ for(let i=0;i<supChunks.length;i++)await blobRequest('save-chunk',{library,kind:'supplies',index:i,records:supChunks[i]});
+ const data=await blobRequest('finalize-chunked',{library,compositionChunks:compChunks.length,supplyChunks:supChunks.length,compositionCount:compositions.length,supplyCount:supplies.length});
+ mergeBlobLibraryMeta(data.library);
+ return data.library;
+}
 async function saveLibraryToBlob(library,compositions,supplies){
+ if(jsonBytes({library,compositions,supplies})>3500000)return saveLibraryToBlobChunked(library,compositions,supplies);
  const data=await blobRequest('save',{library,compositions,supplies});
  mergeBlobLibraryMeta(data.library);
  return data.library;
