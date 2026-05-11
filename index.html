@@ -120,6 +120,7 @@
     <button class="nav" type="button" onclick="toggleTheme()" id="sideThemeToggle">🌙 Modo noturno</button>
     <a class="nav side-link" href="https://www.pdf2go.com/pt" target="_blank" rel="noopener">📄 PDF para Excel</a>
     <a class="nav side-link" href="https://prospector-adm.netlify.app/" target="_blank" rel="noopener">🧭 Prospector</a>
+    <div class="side-card" id="authCard"><b>Usuário:</b> modo local<br><span class="small">Entre para salvar orçamentos e composições próprias na nuvem.</span><div class="btns"><button class="btn pri" onclick="openAuth()">Entrar</button></div></div>
     <div class="side-card"><b>UF padrão:</b> SC / Santa Catarina<br><b>Base ativa:</b> SINAPI<br><b>Uso principal:</b> orçamentos e composições.</div>
   </aside>
   <main>
@@ -321,6 +322,17 @@
   <div class="btns"><button class="btn pri" onclick="unlockAdmin()">Continuar</button><button class="btn soft" onclick="closeM('adminModal')">Cancelar</button></div>
 </div></div>
 
+<div class="modal-bg" id="authModal"><div class="modal" style="width:min(560px,96vw)">
+  <div class="modal-head"><div><h3>Acesso do usuário</h3><p class="muted small">Orçamentos, composições próprias e dados da empresa ficam separados por usuário.</p></div><button class="close" onclick="closeM('authModal')">×</button></div>
+  <div class="form">
+    <div class="span4"><label>E-mail</label><input type="email" id="authEmail" autocomplete="email"></div>
+    <div class="span4"><label>Senha</label><input type="password" id="authPass" autocomplete="current-password" onkeydown="if(event.key==='Enter')loginUser()"></div>
+    <div class="span4"><label>Nome, para novo cadastro</label><input id="authName" autocomplete="name" placeholder="Opcional"></div>
+  </div>
+  <div class="notice" id="authMsg" style="display:none;margin-top:14px"></div>
+  <div class="btns"><button class="btn pri" onclick="loginUser()">Entrar</button><button class="btn soft" onclick="signupUser()">Criar conta</button><button class="btn soft" onclick="closeM('authModal')">Cancelar</button></div>
+</div></div>
+
 <div class="modal-bg" id="supplyModal"><div class="modal">
   <div class="modal-head"><div><h3 id="supplyTitle">Novo insumo</h3><p class="muted small">Materiais, mão de obra, equipamentos e serviços.</p></div><button class="close" onclick="closeM('supplyModal')">×</button></div>
   <input type="hidden" id="supId">
@@ -402,10 +414,15 @@
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script type="module">import * as pdfjsLib from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';window.pdfjsLib=pdfjsLib;</script>
+<script type="module">
+import { getUser, login, logout, signup, handleAuthCallback, onAuthChange } from 'https://esm.sh/@netlify/identity@1.1.0';
+window.orccAuth={getUser,login,logout,signup,handleAuthCallback,onAuthChange};
+window.dispatchEvent(new CustomEvent('orcc-auth-ready'));
+</script>
 <script>
 const KEY='composicoes_obras_sc_v1';
 const DB_NAME='orcc_store_v2',DB_STORE='state',DB_KEY='main';
-let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, memoryBudgetItem=-1, memoryRows=[], dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false;
+let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, memoryBudgetItem=-1, memoryRows=[], dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false, authUser=null, authReady=false, userSaveTimer=null, userCloudLoading=false;
 function emptyCompany(){return{name:'',doc:'',phone:'',email:'',address:'',notes:'',logo:''}}
 function base(){return{settings:{uf:'SC',fonte:'SINAPI',tipo:'Não desonerado',bdi:25,activeLibraryId:'',theme:'light',company:emptyCompany(),adminPassword:''},libraries:[],supplies:[],compositions:[],budgets:[]}}
 function mergeState(d){let b=base(),settings={...b.settings,...((d||{}).settings||{})};settings.company={...emptyCompany(),...(settings.company||{})};return {...b,...(d||{}),settings}}
@@ -420,7 +437,115 @@ function save(){
  saveToDb().then(()=>{dbReady=true;try{localStorage.setItem(KEY,JSON.stringify({settings:state.settings,libraries:state.libraries,budgets:state.budgets}))}catch(e){localStorage.removeItem(KEY)}}).catch(err=>{
    try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){alert('Não foi possível salvar os dados. O navegador bloqueou o IndexedDB e o localStorage está cheio.\n\nDetalhe: '+(err?.message||e?.message||err))}
  });
+ scheduleUserCloudSave();
  return true;
+}
+function userPrivateState(){
+ const blobIds=new Set(state.libraries.filter(l=>l.storage==='blob').map(l=>l.id));
+ return {
+  version:1,
+  settings:state.settings,
+  budgets:state.budgets||[],
+  compositions:(state.compositions||[]).filter(c=>!blobIds.has(c.libraryId)&&String(c.source||'').toUpperCase()==='PROPRIA'),
+  supplies:(state.supplies||[]).filter(s=>!s.libraryId&&String(s.source||'').toUpperCase()==='PROPRIA')
+ };
+}
+function applyUserPrivateState(data){
+ if(!data)return;
+ const blobIds=new Set(state.libraries.filter(l=>l.storage==='blob').map(l=>l.id));
+ const officialComps=(state.compositions||[]).filter(c=>blobIds.has(c.libraryId)||String(c.source||'').toUpperCase()!=='PROPRIA');
+ const officialSups=(state.supplies||[]).filter(s=>s.libraryId||String(s.source||'').toUpperCase()!=='PROPRIA');
+ state.settings={...state.settings,...(data.settings||{})};
+ state.settings.company={...emptyCompany(),...(state.settings.company||{})};
+ state.budgets=Array.isArray(data.budgets)?data.budgets:[];
+ state.compositions=officialComps.concat(Array.isArray(data.compositions)?data.compositions:[]);
+ state.supplies=officialSups.concat(Array.isArray(data.supplies)?data.supplies:[]);
+}
+async function userStoreRequest(method='GET',payload=null){
+ const opt=method==='GET'?{}:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload||{})};
+ const res=await fetch('/.netlify/functions/user-store',opt);
+ const data=await res.json().catch(()=>({}));
+ if(!res.ok||!data.ok)throw new Error(data.mensagem||'Falha ao acessar dados do usuário.');
+ return data;
+}
+function scheduleUserCloudSave(){
+ if(!authUser||userCloudLoading)return;
+ clearTimeout(userSaveTimer);
+ userSaveTimer=setTimeout(()=>saveUserCloud(true),900);
+}
+async function saveUserCloud(silent=false){
+ if(!authUser)return;
+ try{
+  await userStoreRequest('POST',userPrivateState());
+  if(typeof authCard!=='undefined')renderAuthCard();
+ }catch(e){
+  if(!silent)alert('Não foi possível salvar os dados do usuário na nuvem.\n\nDetalhe: '+(e?.message||e));
+ }
+}
+async function loadUserCloud(){
+ if(!authUser)return;
+ userCloudLoading=true;
+ try{
+  const data=await userStoreRequest('GET');
+  if(data.data){
+   applyUserPrivateState(data.data);
+  }else if((state.budgets||[]).length||(state.compositions||[]).some(c=>String(c.source||'').toUpperCase()==='PROPRIA')){
+   await saveUserCloud(true);
+  }
+  saveToDb().catch(()=>{});
+  render();
+ }catch(e){
+  alert('Login realizado, mas não foi possível carregar os dados do usuário.\n\nDetalhe: '+(e?.message||e));
+ }finally{
+  userCloudLoading=false;
+ }
+}
+function renderAuthCard(){
+ if(typeof authCard==='undefined')return;
+ if(authUser){
+  authCard.innerHTML=`<b>Usuário:</b> ${esc(authUser.email||authUser.name||'logado')}<br><span class="small">Dados privados sincronizados na nuvem.</span><div class="btns"><button class="btn soft" onclick="saveUserCloud()">Salvar agora</button><button class="btn danger" onclick="logoutUser()">Sair</button></div>`;
+ }else{
+  authCard.innerHTML='<b>Usuário:</b> modo local<br><span class="small">Entre para salvar orçamentos e composições próprias na nuvem.</span><div class="btns"><button class="btn pri" onclick="openAuth()">Entrar</button></div>';
+ }
+}
+function openAuth(){authMsg.style.display='none';openM('authModal');setTimeout(()=>authEmail.focus(),80)}
+function authMessage(msg){authMsg.style.display='block';authMsg.textContent=msg}
+async function loginUser(){
+ if(!window.orccAuth){authMessage('Autenticação ainda carregando. Tente novamente em alguns segundos.');return}
+ try{
+  authMessage('Entrando...');
+  authUser=await window.orccAuth.login(authEmail.value.trim(),authPass.value);
+  closeM('authModal');
+  renderAuthCard();
+  await loadUserCloud();
+ }catch(e){authMessage(e?.message||'Não foi possível entrar.')}
+}
+async function signupUser(){
+ if(!window.orccAuth){authMessage('Autenticação ainda carregando. Tente novamente em alguns segundos.');return}
+ try{
+  authMessage('Criando conta...');
+  authUser=await window.orccAuth.signup(authEmail.value.trim(),authPass.value,{full_name:authName.value.trim()});
+  closeM('authModal');
+  renderAuthCard();
+  await loadUserCloud();
+ }catch(e){authMessage(e?.message||'Não foi possível criar a conta.')}
+}
+async function logoutUser(){
+ if(!window.orccAuth)return;
+ if(!confirm('Sair deste usuário? Os dados locais permanecem neste navegador.'))return;
+ try{await saveUserCloud(true);await window.orccAuth.logout()}catch(e){}
+ authUser=null;
+ renderAuthCard();
+ render();
+}
+async function initAuth(){
+ if(authReady||!window.orccAuth)return;
+ authReady=true;
+ try{await window.orccAuth.handleAuthCallback()}catch(e){console.warn('Callback de autenticação não processado',e)}
+ try{authUser=await window.orccAuth.getUser()}catch(e){authUser=null}
+ window.orccAuth.onAuthChange?.((event,user)=>{authUser=user;renderAuthCard();if(user)loadUserCloud()});
+ renderAuthCard();
+ if(authUser)await loadUserCloud();
 }
 async function blobRequest(action,payload=null){
  const url='/.netlify/functions/bases-store'+(payload===null?'?action='+encodeURIComponent(action):'');
@@ -1017,6 +1142,7 @@ function fillAnalyticExample(){
 
 function render(){
  applyTheme();
+ renderAuthCard();
  stLib.textContent=state.libraries.length;stComp.textContent=state.compositions.length;stIns.textContent=state.supplies.length;stOrc.textContent=state.budgets.length;
  let lib=state.libraries.find(l=>l.id===state.settings.activeLibraryId);activeLib.textContent=lib?'📚 Biblioteca ativa: '+lib.name:'📚 Biblioteca ativa: nenhuma';
  cfgUf.value=state.settings.uf;cfgFonte.value=state.settings.fonte;cfgTipo.value=state.settings.tipo;cfgBdi.value=state.settings.bdi;impUf.value=state.settings.uf;impFonte.value=state.settings.fonte;impTipo.value=state.settings.tipo;
@@ -2095,7 +2221,9 @@ function importBackup(){let f=backupFile.files[0];if(!f){alert('Selecione JSON.'
 function demo(){if(!confirm('Adicionar dados de exemplo?'))return;let lib={id:id('lib'),name:'Exemplo SINAPI SC 05-2026 Não Desonerado',source:'SINAPI',uf:'SC',baseDate:'2026-05',type:'Não desonerado',compositionCount:2,supplyCount:4};let s=[{id:id('sup'),code:'MO-001',description:'Pedreiro',unit:'h',category:'Mão de obra',price:28,source:'Exemplo',baseDate:'2026-05',note:''},{id:id('sup'),code:'MO-002',description:'Servente',unit:'h',category:'Mão de obra',price:18,source:'Exemplo',baseDate:'2026-05',note:''},{id:id('sup'),code:'MAT-001',description:'Bloco cerâmico',unit:'un',category:'Material',price:1.2,source:'Exemplo',baseDate:'2026-05',note:''},{id:id('sup'),code:'MAT-002',description:'Tinta acrílica',unit:'l',category:'Material',price:32,source:'Exemplo',baseDate:'2026-05',note:''}];let a=s[0],b=s[1],c=s[2],d=s[3];let comps=[mk(lib.id,'87503','Alvenaria de vedação em bloco cerâmico','m²',[[a,.8,0],[b,.9,0],[c,25,5]]),mk(lib.id,'88489','Pintura acrílica em parede','m²',[[b,.2,0],[d,.18,10]])];state.libraries.push(lib);state.supplies.push(...s);state.compositions.push(...comps);state.settings.activeLibraryId=lib.id;save()}
 function mk(lid,code,desc,unit,arr){let items=arr.map(([s,coef,w])=>({id:id('item'),supplyId:s.id,code:s.code,description:s.description,category:s.category,unit:s.unit,coefficient:coef,price:s.price,waste:w}));return{id:id('comp'),code,description:desc,unit,source:'SINAPI',uf:'SC',baseDate:'2026-05',type:'Não desonerado',note:'Composição exemplo.',libraryId:lid,items,cost:items.reduce((a,i)=>a+itemTotal(i),0)}}
 function clearAll(){if(confirm('Apagar todos os dados?')){state=base();localStorage.removeItem(KEY);save()}}
-loadFromDb().then(()=>syncBlobLibraries().then(()=>loadActiveBlobLibrary()).catch(e=>console.warn('Blobs não sincronizou',e)));
+window.addEventListener('orcc-auth-ready',initAuth);
+if(window.orccAuth)initAuth();
+loadFromDb().then(()=>syncBlobLibraries().then(()=>loadActiveBlobLibrary()).then(()=>initAuth()).catch(e=>console.warn('Blobs não sincronizou',e)));
 impMes.value=new Date().toISOString().slice(0,7);supMes.value=new Date().toISOString().slice(0,7);cMes.value=new Date().toISOString().slice(0,7);if(typeof ofMes!=='undefined')ofMes.value=new Date().toISOString().slice(0,7);if(typeof anMes!=='undefined')anMes.value=new Date().toISOString().slice(0,7);
 function updateImpName(){if(!impNome.value)impNome.value=`${impFonte.value} ${impUf.value} ${impMes.value||new Date().toISOString().slice(0,7)} ${impTipo.value}`}
 ['impFonte','impUf','impMes','impTipo'].forEach(x=>document.getElementById(x).addEventListener('change',updateImpName));updateImpName();render();
