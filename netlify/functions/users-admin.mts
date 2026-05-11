@@ -1,5 +1,5 @@
 import { getStore } from "@netlify/blobs";
-import { createHash } from "node:crypto";
+import { createHash, pbkdf2Sync, randomBytes, randomUUID } from "node:crypto";
 
 const USER_STORE = "orcc-users";
 const AUTH_STORE = "orcc-auth";
@@ -11,7 +11,17 @@ type ManagedUser = {
   name: string;
   role: string;
   seeded: boolean;
+  passwordReady?: boolean;
   createdBy?: string;
+  createdAt: string;
+};
+
+type AuthUser = {
+  id: string;
+  email: string;
+  name: string;
+  salt: string;
+  passwordHash: string;
   createdAt: string;
 };
 
@@ -50,6 +60,10 @@ function userStore() {
 
 function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
+}
+
+function passwordHash(password: string, salt: string) {
+  return pbkdf2Sync(password, salt, 120000, 32, "sha256").toString("hex");
 }
 
 async function getCurrentUser(req: Request) {
@@ -97,6 +111,26 @@ async function savePendingUserData(email: string, data: unknown, managed: Manage
   });
 }
 
+async function createAuthUserIfPassword(email: string, name: string, password: string) {
+  if (!password) return false;
+  if (password.length < 6) throw new Error("A senha inicial deve ter pelo menos 6 caracteres.");
+  const key = `users/${safeId(email)}.json`;
+  const existing = await authStore().get(key, { type: "json" }) as AuthUser | null;
+  if (existing) return true;
+  const now = new Date().toISOString();
+  const salt = randomBytes(16).toString("hex");
+  const user: AuthUser = {
+    id: randomUUID(),
+    email,
+    name,
+    salt,
+    passwordHash: passwordHash(password, salt),
+    createdAt: now
+  };
+  await authStore().setJSON(key, user, { metadata: { userId: user.id, email, createdAt: now } });
+  return true;
+}
+
 export default async (req: Request) => {
   try {
     const url = new URL(req.url);
@@ -139,13 +173,16 @@ export default async (req: Request) => {
       const email = String(payload.email || "").trim().toLowerCase();
       const name = String(payload.name || "").trim();
       const role = payload.role === "admin" ? "admin" : "user";
+      const password = String(payload.password || "");
       if (!email || !email.includes("@")) return json({ ok: false, mensagem: "Informe um e-mail valido." }, 400);
+      const passwordReady = await createAuthUserIfPassword(email, name || email, password);
 
       const managed: ManagedUser = {
         email,
         name: name || email,
         role,
         seeded: !!payload.initialData,
+        passwordReady,
         createdBy: auth.user?.email || auth.user?.id,
         createdAt: new Date().toISOString()
       };
