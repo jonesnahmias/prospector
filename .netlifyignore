@@ -17,6 +17,8 @@ SEINFRA/
 !SINAPI_Referência_2026_03.xlsx
 !SINAPI_SC_CSD_2026_03.csv
 !SINAPI_SC_ISD_2026_03.csv
+!sc-01-2026/
+!sc-01-2026/SC 01-2026 Relatório Analítico de Composições de Custos.xlsx
 
 netlify/functions/*.zip
 netlify/functions/manifest.json
