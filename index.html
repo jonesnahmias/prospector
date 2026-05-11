@@ -371,7 +371,7 @@
   </div>
   <div class="table sheet-table" style="margin-top:14px"><table id="biTable"></table></div>
   <div class="summary"><div class="box"><span class="small muted">Custo direto</span><div class="v" id="bDireto">R$ 0,00</div></div><div class="box"><span class="small muted">BDI</span><div class="v" id="bBdiTot">R$ 0,00</div></div><div class="box"><span class="small muted">Total final</span><div class="v" id="bTotal">R$ 0,00</div></div><div class="box"><span class="small muted">Itens</span><div class="v" id="bItens">0</div></div></div>
-  <div class="btns"><button class="btn pri" onclick="saveBudget()">Salvar orçamento</button><button class="btn soft" onclick="viewCurrentBudget()">Visualizar</button><button class="btn blue" onclick="printCurrentBudget()">Imprimir</button><button class="btn soft" onclick="closeM('budgetModal')">Fechar</button><span class="autosave-status" id="budgetSaveStatus">Salvamento automático ativo</span></div>
+  <div class="btns"><button class="btn pri" onclick="saveBudget()">Salvar orçamento</button><button class="btn soft" onclick="viewCurrentBudget()">Visualizar</button><button class="btn ok" onclick="viewCurrentBudgetMemories()">Memórias</button><button class="btn blue" onclick="printCurrentBudget()">Imprimir</button><button class="btn soft" onclick="closeM('budgetModal')">Fechar</button><span class="autosave-status" id="budgetSaveStatus">Salvamento automático ativo</span></div>
 </div></div>
 
 <div class="modal-bg" id="memoryModal" style="z-index:90"><div class="modal" style="width:min(920px,96vw)">
@@ -386,6 +386,12 @@
   <div class="modal-head"><div><h3 id="budgetViewTitle">Visualizar orçamento</h3><p class="muted small">Consulta do orçamento no padrão da planilha.</p></div><button class="close" onclick="closeM('budgetViewModal')">×</button></div>
   <div class="budget-view" id="budgetViewBody"></div>
   <div class="btns"><button class="btn soft" id="budgetViewEdit" type="button">Editar</button><button class="btn ok" id="budgetViewExcel" type="button">Excel</button><button class="btn blue" id="budgetViewPrint" type="button">Imprimir</button><button class="btn soft" onclick="closeM('budgetViewModal')">Fechar</button></div>
+</div></div>
+
+<div class="modal-bg" id="budgetMemoryViewModal"><div class="modal">
+  <div class="modal-head"><div><h3 id="budgetMemoryViewTitle">Memórias de cálculo</h3><p class="muted small">Relatório separado das memórias dos itens.</p></div><button class="close" onclick="closeM('budgetMemoryViewModal')">×</button></div>
+  <div class="budget-view" id="budgetMemoryViewBody"></div>
+  <div class="btns"><button class="btn ok" id="budgetMemoryViewExcel" type="button">Excel</button><button class="btn blue" id="budgetMemoryViewPrint" type="button">Imprimir</button><button class="btn soft" onclick="closeM('budgetMemoryViewModal')">Fechar</button></div>
 </div></div>
 
 <div class="modal-bg" id="compositionViewModal" style="z-index:70"><div class="modal">
@@ -1722,6 +1728,10 @@ function viewCurrentBudget(){
  const b=persistBudgetDraft({silent:false,allowEmpty:true});
  if(b)viewBudget(b.id);
 }
+function viewCurrentBudgetMemories(){
+ const b=persistBudgetDraft({silent:false,allowEmpty:true});
+ if(b)viewBudgetMemories(b.id);
+}
 function printCurrentBudget(){
  const b=persistBudgetDraft({silent:false,allowEmpty:true});
  if(b)printBudget(b.id);
@@ -1908,10 +1918,20 @@ function budgetTableStandard(b,forXls=false){
  const td=(v,cls='')=>`<td class="${cls}">${v}</td>`;
  const body=groups.map(g=>{
    const head=`<tr class="budget-group">${td(g.index,'center')}${td('')}${td('')}${td(esc(g.name),'strong')}${td('')}${td('1,00','right')}${td('')}${td(moneyCell(g.total),'right strong')}${td(moneyCell(g.total),'right strong')}</tr>`;
-   const items=g.items.map((it,k)=>{let x=bItem(it),unitBdi=n(it.cost)*(1+n(it.bdi)/100),mem=Array.isArray(it.memory)&&it.memory.length?`<tr><td></td><td colspan="8"><b>Memória de cálculo</b><table style="width:100%;margin-top:6px"><thead><tr><th>Local</th><th>Descrição</th><th>Fórmula</th><th>Operação</th><th class="right">Total</th></tr></thead><tbody>${it.memory.map(r=>`<tr><td>${esc(r.local||'')}</td><td>${esc(r.description||'')}</td><td>${esc(r.formula||'')}</td><td>${r.op==='subtract'?'Subtrair':'Somar'}</td><td class="right">${qtyCell(memoryLineTotal(r))}</td></tr>`).join('')}<tr class="total"><td colspan="4">Total da memória</td><td class="right">${qtyCell(memoryTotal(it.memory))}</td></tr></tbody></table></td></tr>`:'';return `<tr class="budget-item">${td(`${g.index}.${k+1}`,'center')}${td(esc(it.code||''))}${td(esc(budgetBank(it)))}${td(esc(it.description||''))}${td(esc(it.unit||''),'center')}${td(qtyCell(it.quantity),'right')}${td(moneyCell(it.cost),'right')}${td(moneyCell(unitBdi),'right')}${td(moneyCell(x.total),'right strong')}</tr>${mem}`}).join('');
+   const items=g.items.map((it,k)=>{let x=bItem(it),unitBdi=n(it.cost)*(1+n(it.bdi)/100);return `<tr class="budget-item">${td(`${g.index}.${k+1}`,'center')}${td(esc(it.code||''))}${td(esc(budgetBank(it)))}${td(esc(it.description||''))}${td(esc(it.unit||''),'center')}${td(qtyCell(it.quantity),'right')}${td(moneyCell(it.cost),'right')}${td(moneyCell(unitBdi),'right')}${td(moneyCell(x.total),'right strong')}</tr>`}).join('');
    return head+items;
  }).join('');
  return `<table class="budget-model"><colgroup><col style="width:62px"><col style="width:115px"><col style="width:105px"><col style="width:560px"><col style="width:65px"><col style="width:70px"><col style="width:90px"><col style="width:105px"><col style="width:105px"></colgroup><thead><tr><th>Item</th><th>Código</th><th>Base</th><th>Descrição</th><th>Und</th><th>Quant.</th><th>Valor Unit</th><th>Valor c/ BDI</th><th>Total</th></tr></thead><tbody>${body}<tr class="budget-total"><td colspan="8">TOTAL</td><td class="right strong">${moneyCell(total)}</td></tr></tbody></table>`;
+}
+function budgetMemoryRows(b){
+ const rows=[];
+ budgetGroupsData(b).forEach(g=>g.items.forEach((it,k)=>{if(Array.isArray(it.memory)&&it.memory.length)rows.push({item:`${g.index}.${k+1}`,group:g.name,it})}));
+ return rows;
+}
+function budgetMemoriesBody(b){
+ const rows=budgetMemoryRows(b);
+ if(!rows.length)return `<div class="section"><h2>${esc(b.name)}</h2><div class="empty">Nenhuma memória de cálculo cadastrada neste orçamento.</div></div>`;
+ return `<div class="section"><h2>Memórias de cálculo - ${esc(b.name)}</h2><div class="small">Cliente/Órgão: ${esc(b.client||'-')} • Data: ${esc(b.date||'-')} • UF: ${esc(b.uf||'-')}</div>${rows.map(({item,group,it})=>`<h2 style="font-size:14px;margin-top:18px">${esc(item)} - ${esc(it.code||'')} - ${esc(it.description||'')}</h2><div class="small">Grupo: ${esc(group)} • Unidade: ${esc(it.unit||'')} • Quantidade aplicada: ${qtyCell(it.quantity)}</div><table><thead><tr><th>Local</th><th>Descrição</th><th>Fórmula</th><th>Operação</th><th class="right">Total</th></tr></thead><tbody>${it.memory.map(r=>`<tr><td>${esc(r.local||'')}</td><td>${esc(r.description||'')}</td><td>${esc(r.formula||'')}</td><td>${r.op==='subtract'?'Subtrair':'Somar'}</td><td class="right">${qtyCell(memoryLineTotal(r))}</td></tr>`).join('')}<tr class="total"><td colspan="4">Total da memória</td><td class="right">${qtyCell(memoryTotal(it.memory))}</td></tr></tbody></table>`).join('')}</div>`;
 }
 function exportBudgetXls(id){
  const b=state.budgets.find(a=>a.id===id);if(!b){alert('Orçamento não encontrado.');return}
@@ -1927,11 +1947,6 @@ function exportBudgetXls(id){
    g.items.forEach((it,k)=>{
      const x=bItem(it),unitBdi=n(it.cost)*(1+n(it.bdi)/100);
      rows.push([`${g.index}.${k+1}`,it.code||'',budgetBank(it),it.description||'',it.unit||'',n(it.quantity),n(it.cost),n(unitBdi),n(x.total)]);
-     if(Array.isArray(it.memory)&&it.memory.length){
-       rows.push(['','','','Memória de cálculo','','','','','']);
-       it.memory.forEach(r=>rows.push(['','','',r.local||'',r.description||'',r.formula||'',r.op==='subtract'?'Subtrair':'Somar',n(memoryLineTotal(r)),'']));
-       rows.push(['','','','Total da memória','','','',n(memoryTotal(it.memory)),'']);
-     }
    });
  });
  rows.push(['TOTAL','','','','','','','',n(budgetTotals(b.items||[]).total)]);
@@ -1953,6 +1968,13 @@ function exportBudgetXls(id){
  }
  const wb=XLSX.utils.book_new();
  XLSX.utils.book_append_sheet(wb,ws,'Orçamento');
+ const memRows=[['Memórias de cálculo - '+(b.name||'Orçamento')],['Cliente/Órgão: '+(b.client||'-')+' | Data: '+(b.date||'-')+' | UF: '+(b.uf||'-')],[],['Item','Código','Grupo','Descrição do item','Unidade','Quantidade aplicada','Local','Descrição da memória','Fórmula','Operação','Total']];
+ budgetMemoryRows(b).forEach(({item,group,it})=>{it.memory.forEach(r=>memRows.push([item,it.code||'',group,it.description||'',it.unit||'',n(it.quantity),r.local||'',r.description||'',r.formula||'',r.op==='subtract'?'Subtrair':'Somar',n(memoryLineTotal(r))]));memRows.push([item,it.code||'',group,'Total da memória',it.unit||'',n(memoryTotal(it.memory)),'','','','',''])});
+ if(memRows.length>4){
+   const mws=XLSX.utils.aoa_to_sheet(memRows);
+   mws['!cols']=[{wch:8},{wch:14},{wch:22},{wch:56},{wch:10},{wch:16},{wch:22},{wch:34},{wch:18},{wch:12},{wch:14}];
+   XLSX.utils.book_append_sheet(wb,mws,'Memorias');
+ }
  XLSX.writeFile(wb,safe(b.name)+'_orcamento_padrao.xlsx');
 }
 function exportBudgetsCsv(){
@@ -2010,9 +2032,23 @@ function viewBudget(id){
  print.onclick=()=>printBudget(id);
  openM('budgetViewModal');
 }
+function viewBudgetMemories(id){
+ let b=state.budgets.find(x=>x.id===id);if(!b){alert('Orçamento não encontrado.');return}
+ const title=document.getElementById('budgetMemoryViewTitle'),body=document.getElementById('budgetMemoryViewBody');
+ const excel=document.getElementById('budgetMemoryViewExcel'),print=document.getElementById('budgetMemoryViewPrint');
+ title.textContent='Memórias de cálculo - '+(b.name||'Orçamento');
+ body.innerHTML=budgetMemoriesBody(b);
+ excel.onclick=()=>exportBudgetXls(id);
+ print.onclick=()=>printBudgetMemories(id);
+ openM('budgetMemoryViewModal');
+}
 function printBudget(id){
  let b=state.budgets.find(x=>x.id===id);if(!b){alert('Orçamento não encontrado.');return}
  printHtml('Orçamento - '+b.name,budgetPrintBody(b));
+}
+function printBudgetMemories(id){
+ let b=state.budgets.find(x=>x.id===id);if(!b){alert('Orçamento não encontrado.');return}
+ printHtml('Memórias de cálculo - '+b.name,budgetMemoriesBody(b));
 }
 function printBudgets(){
  if(!state.budgets.length){alert('Nenhum orçamento para imprimir.');return}
