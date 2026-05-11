@@ -265,6 +265,34 @@ export default async (req: Request) => {
 
     const base = bases[`${fonte}|${uf}|${mes}`];
 
+    if (fonte === 'SINAPI' && uf === 'SC' && mes === '2026-03') {
+      return json({
+        ok: true,
+        modo: 'sinapi_pacote',
+        mensagem: 'Pacote SINAPI encontrado. O app vai baixar ISD, CSD e Analitico para montar a base completa.',
+        parametros: { fonte, uf, mes, tipo },
+        fileName: 'SINAPI SC 2026-03 pacote completo',
+        arquivos: [
+          {
+            tipo: 'isd',
+            fileName: 'SINAPI_SC_ISD_2026_03.csv',
+            downloadUrl: origin + '/SINAPI_SC_ISD_2026_03.csv'
+          },
+          {
+            tipo: 'csd',
+            fileName: 'SINAPI_SC_CSD_2026_03.csv',
+            downloadUrl: origin + '/SINAPI_SC_CSD_2026_03.csv'
+          },
+          {
+            tipo: 'analitico',
+            fileName: 'SINAPI_Referencia_2026_03.xlsx',
+            downloadUrl: origin + '/SINAPI_Refer%C3%AAncia_2026_03.xlsx'
+          }
+        ],
+        observacao: 'SINAPI sera importado como base completa: insumos, composicoes sinteticas e itens analiticos.'
+      });
+    }
+
     if (base) {
       return json({
         ok: true,

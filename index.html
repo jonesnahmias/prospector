@@ -639,6 +639,95 @@ function importRowsFromOfficial(rows,fileName,meta={}){
  impNome.value=old.name;impFonte.value=old.fonte;impUf.value=old.uf;impMes.value=old.mes;impTipo.value=old.tipo;
  alert('A base foi baixada, mas o formato ainda não é reconhecido automaticamente. Use o upload manual ou converta para CSV modelo.');
 }
+async function rowsFromOfficialFile(file){
+ const res=await fetch(file.downloadUrl);
+ if(!res.ok)throw new Error('Não foi possível baixar '+(file.fileName||file.downloadUrl));
+ const ext=String(file.fileName||file.downloadUrl).toLowerCase().split('?')[0].split('.').pop();
+ if(ext==='csv'||ext==='txt'){
+   return csvParse(await res.text());
+ }
+ const buf=await res.arrayBuffer();
+ if(typeof XLSX==='undefined')throw new Error('Biblioteca XLSX não carregou no navegador.');
+ const workbook=XLSX.read(new Uint8Array(buf),{type:'array'});
+ return excelRowsFromWorkbook(workbook);
+}
+function parseSinapiSupplyRows(rows,meta){
+ const headerIndex=rows.findIndex(r=>{const h=r.map(x=>norm(String(x||'').replace(/\n+/g,' ')));return h.includes('codigo')&&h.includes('descricao')&&h.includes('unidade')&&h.includes('custo')});
+ if(headerIndex<0)return [];
+ const heads=rows[headerIndex].map(norm);
+ return rows.slice(headerIndex+1).map(cols=>{let r={};heads.forEach((h,i)=>r[h]=String(cols[i]??'').trim());return r}).filter(r=>pick(r,['codigo','código','codigo_do_insumo'])).map(r=>{
+   const code=pick(r,['codigo','código','codigo_do_insumo','código_do_insumo','cod']);
+   const origem=pick(r,['origem','origem_de_preco','origem_de_preço']);
+   return {id:id('sup'),code,description:pick(r,['descricao','descrição','descricao_do_insumo','descrição_do_insumo']),unit:pick(r,['unidade','un','und']),category:pick(r,['classificacao','classificação','categoria'])||'Material',price:n(pick(r,['custo','preco','preço','valor'])),source:meta.fonte,uf:meta.uf,baseDate:meta.mes,type:meta.tipo,note:'Importado automaticamente do pacote SINAPI'+(origem?' | Origem: '+origem:'')};
+ });
+}
+function parseSinapiCsdRows(rows,meta){
+ const headerIndex=rows.findIndex(r=>{const h=r.map(x=>norm(String(x||'').replace(/\n+/g,' ')));return h.includes('codigo')&&h.includes('descricao')&&h.includes('unidade')&&h.includes('custo')});
+ if(headerIndex<0)return [];
+ const heads=rows[headerIndex].map(norm);
+ return rows.slice(headerIndex+1).map(cols=>{let r={};heads.forEach((h,i)=>r[h]=String(cols[i]??'').trim());return r}).filter(r=>pick(r,['codigo','código','codigo_da_composicao','código_da_composição'])).map(r=>({
+   id:id('comp'),
+   code:pick(r,['codigo','código','codigo_da_composicao','código_da_composição']),
+   description:pick(r,['descricao','descrição']),
+   unit:pick(r,['unidade','un','und']),
+   source:meta.fonte,
+   uf:meta.uf,
+   baseDate:meta.mes,
+   type:meta.tipo,
+   note:'Importado automaticamente do pacote SINAPI.',
+   libraryId:'',
+   group:pick(r,['grupo']),
+   items:[],
+   cost:n(pick(r,['custo','custo_r','custo_r_','preco','preço','valor']))
+ }));
+}
+function applySinapiAnalyticRows(rows,meta,comps,supplies){
+ const headerIndex=rows.findIndex(r=>{let h=r.map(x=>norm(String(x||'').replace(/\n+/g,' ')));return h.includes('codigo_da_composicao')&&h.includes('tipo_item')&&h.includes('codigo_do_item')&&h.includes('coeficiente')});
+ if(headerIndex<0)return {invalid:0,missing:0};
+ const headers=rows[headerIndex].map(x=>norm(String(x||'').replace(/\n+/g,' ')));
+ const data=rows.slice(headerIndex+1).map(cols=>{let o={};headers.forEach((h,i)=>o[h]=String(cols[i]??'').trim());return o});
+ const supplyByCode=new Map(supplies.map(s=>[String(s.code||'').trim(),s]));
+ const compByCode=new Map(comps.map(c=>[String(c.code||'').trim(),c]));
+ let current='',invalid=0,missing=0;
+ data.forEach(r=>{
+   const compCode=String(r.codigo_da_composicao||'').trim();
+   const itemType=String(r.tipo_item||'').trim();
+   const itemCode=String(r.codigo_do_item||'').trim();
+   const desc=String(r.descricao||'').trim();
+   const unit=String(r.unidade||'').trim();
+   const coef=n(r.coeficiente);
+   const group=String(r.grupo||'').trim();
+   if(!compCode&&!desc){invalid++;return}
+   if(compCode)current=compCode;
+   let comp=compByCode.get(current||compCode);
+   if(!comp&&compCode){
+     comp={id:id('comp'),code:compCode,description:desc||'Sem descrição',unit,source:meta.fonte,uf:meta.uf,baseDate:meta.mes,type:meta.tipo,note:'Importado automaticamente do pacote SINAPI.',libraryId:'',items:[],cost:0,group};
+     comps.push(comp);compByCode.set(comp.code,comp);
+   }
+   if(!comp||!itemType||!itemCode)return;
+   const isComp=itemType.toUpperCase().includes('COMPOS');
+   const ref=isComp?compByCode.get(itemCode):supplyByCode.get(itemCode);
+   const price=isComp?n(ref?compCost(ref):0):n(ref?.price||0);
+   if(price===0)missing++;
+   comp.items.push({id:id('item'),supplyId:!isComp&&ref?ref.id:'',code:itemCode,description:desc,category:isComp?'Composição auxiliar':classifyAnalyticItem(itemType,itemCode,desc),unit,coefficient:coef,price,waste:0,situation:String(r.situacao||'').trim()});
+ });
+ return {invalid,missing};
+}
+async function importSinapiOfficialPackage(data,meta,baseName){
+ const files=data.arquivos||[];
+ const isd=files.find(f=>f.tipo==='isd'),csd=files.find(f=>f.tipo==='csd'),analitico=files.find(f=>f.tipo==='analitico');
+ if(!isd||!csd||!analitico)throw new Error('Pacote SINAPI incompleto: faltam ISD, CSD ou Analítico.');
+ officialResult.innerHTML='<b>Baixando SINAPI completo...</b><br>1/3 Insumos ISD';
+ const supplies=uniqueRecords(parseSinapiSupplyRows(await rowsFromOfficialFile(isd),meta));
+ officialResult.innerHTML='<b>Baixando SINAPI completo...</b><br>2/3 Composições CSD';
+ const comps=parseSinapiCsdRows(await rowsFromOfficialFile(csd),meta);
+ officialResult.innerHTML='<b>Baixando SINAPI completo...</b><br>3/3 Analítico';
+ const analytic=applySinapiAnalyticRows(await rowsFromOfficialFile(analitico),meta,comps,supplies);
+ buffer={library:{id:id('lib'),name:baseName,source:meta.fonte,uf:meta.uf,baseDate:meta.mes,type:meta.tipo,createdAt:new Date().toISOString(),compositionCount:comps.length,supplyCount:supplies.length,mode:'composicoes'},compositions:comps,supplies,invalid:analytic.invalid,warnings:[]};
+ buffer.warnings=analyzeImportBuffer(buffer).filter(w=>!w.includes('armazenamento local'));
+ if(analytic.missing)buffer.warnings.push(analytic.missing+' item(ns) analítico(s) ficaram sem preço unitário por falta de preço/custo na própria base.');
+ renderPrev();
+}
 async function downloadOfficialBase(){
  if(ofFonte.value==='ORSE'){
    const termo=norm(ofTermo.value);
@@ -663,6 +752,11 @@ async function downloadOfficialBase(){
    const meta={fonte:data.parametros?.fonte||ofFonte.value,uf:data.parametros?.uf||ofUf.value,mes:data.parametros?.mes||ofMes.value,tipo:data.parametros?.tipo||ofTipo.value,termo:ofTermo.value};
    const termName=meta.fonte==='ORSE'&&ofTermo.value?` - ${ofTermo.value.trim()}`:'';
    const baseName=`${meta.fonte} ${meta.uf} ${meta.mes} ${meta.tipo}${termName}`;
+   if(Array.isArray(data.arquivos)&&data.modo==='sinapi_pacote'){
+     await importSinapiOfficialPackage(data,meta,baseName);
+     officialResult.innerHTML=`<b>Base SINAPI completa preparada.</b><br>${esc(data.observacao||'Confira a prévia abaixo e confirme a importação.')}`;
+     return;
+   }
    if(Array.isArray(data.rows)){
      importRowsFromOfficial(data.rows,data.fileName||'base_oficial.csv',{...meta,name:baseName});
      officialResult.innerHTML=`<b>Base preparada.</b><br>${esc(data.observacao||'Confira a prévia abaixo e confirme a importação.')}`;
