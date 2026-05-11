@@ -44,6 +44,7 @@
     .suggest-wrap{position:relative}.suggest-list{display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:80;max-height:260px;overflow:auto;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}.suggest-list.active{display:block}.suggest-item{padding:10px 12px;border-bottom:1px solid var(--line);cursor:pointer;font-size:12px;line-height:1.35}.suggest-item:hover{background:var(--soft)}.suggest-item b{display:block;font-size:13px}.suggest-item span{color:var(--muted)}
     .sheet-table{overflow:visible}.sheet-table table{font-size:12px;min-width:0;table-layout:fixed}.sheet-table th,.sheet-table td{padding:7px 6px}.sheet-table input{width:100%;min-width:0;border:0;border-radius:6px;background:transparent;padding:6px;color:inherit;font-size:12px;box-shadow:none}.sheet-table input:focus{background:rgba(255,255,255,.85);color:#0f172a;box-shadow:0 0 0 2px rgba(20,184,166,.24)}.sheet-table .mini{text-align:right}.sheet-table .unit{text-align:center}.sheet-table .desc{min-width:0}.code-link{width:100%;border:0;border-radius:6px;background:rgba(15,23,42,.08);color:#0b5ed7;font-weight:900;cursor:pointer;padding:6px;text-align:center;font-size:12px}.code-link:hover{text-decoration:underline;background:rgba(29,78,216,.14)}.sheet-table th:nth-child(1),.sheet-table td:nth-child(1){width:5%}.sheet-table th:nth-child(2),.sheet-table td:nth-child(2){width:9%}.sheet-table th:nth-child(3),.sheet-table td:nth-child(3){width:7%}.sheet-table th:nth-child(4),.sheet-table td:nth-child(4){width:35%}.sheet-table th:nth-child(5),.sheet-table td:nth-child(5){width:5%}.sheet-table th:nth-child(6),.sheet-table td:nth-child(6){width:7%}.sheet-table th:nth-child(7),.sheet-table td:nth-child(7){width:8%}.sheet-table th:nth-child(8),.sheet-table td:nth-child(8){width:8%}.sheet-table th:nth-child(9),.sheet-table td:nth-child(9){width:8%}.sheet-table th:nth-child(10),.sheet-table td:nth-child(10){width:8%}.sheet-group td{background:#bdd7ee;color:#0f172a;font-weight:900}.sheet-item td{background:#e2f0d9;color:#0f172a}.sheet-total td{background:#d9eaf7;color:#0f172a;font-weight:900}.row-tools{display:flex;gap:4px;white-space:nowrap}.icon-btn{border:0;border-radius:8px;background:#e2e8f0;color:#0f172a;cursor:pointer;font-weight:900;padding:7px 8px;line-height:1;font-size:12px}
     .budget-view{overflow:auto;border:1px solid var(--line);border-radius:16px;background:#fff;padding:12px}.budget-view h2{font-size:20px;margin:0 0 6px}.budget-view .section{display:block;margin:0}.budget-model{width:100%;min-width:980px;border-collapse:collapse;font-size:12px}.budget-model th{background:#6f6f6f;color:#fff;border:1px solid #bfbfbf;padding:8px;text-align:center}.budget-model td{border:1px solid #cbd5e1;padding:8px;vertical-align:top}.budget-group td{background:#bdd7ee;color:#0f172a;font-weight:900}.budget-item td{background:#e2f0d9;color:#0f172a}.budget-total td{background:#d9eaf7;color:#0f172a;font-weight:900}
+    .calc-table table{min-width:0;table-layout:fixed}.calc-table th,.calc-table td{padding:8px}.calc-table input,.calc-table select{padding:8px;border-radius:8px;font-size:13px}.calc-total{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:12px;margin-top:12px}.calc-total strong{font-size:20px}.calc-badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;border-radius:999px;background:#dbeafe;color:#1e40af;font-size:10px;font-weight:900;margin-left:4px}
     th,td{border-bottom:1px solid #edf2f7;padding:10px;text-align:left;vertical-align:top}th{background:#f8fafc;text-transform:uppercase;font-size:11px;letter-spacing:.04em;color:#334155}
     .right{text-align:right}.center{text-align:center}.strong{font-weight:900}.muted{color:var(--muted)}.small{font-size:12px}.empty{padding:28px;text-align:center;color:var(--muted);background:#f8fafc;border:1px dashed #cbd5e1;border-radius:16px}
     .badge{display:inline-block;border-radius:999px;padding:5px 9px;font-size:11px;font-weight:900;background:#e2e8f0}.sc{background:#dcfce7;color:#166534}.src{background:#dbeafe;color:#1e40af}.prop{background:#fef3c7;color:#92400e}
@@ -88,6 +89,7 @@
     body.dark .table{background:#101827;border-color:var(--line)}
     body.dark .sheet-table input:focus{background:#111827;color:#e5edf8}body.dark .code-link{background:#0b1220;color:#93c5fd}body.dark .code-link:hover{background:#142b4a}body.dark .sheet-group td{background:#21466f;color:#e5edf8}body.dark .sheet-item td{background:#173522;color:#e5edf8}body.dark .sheet-total td{background:#17324d;color:#e5edf8}body.dark .icon-btn{background:#223149;color:#e5edf8}
     body.dark .budget-view{background:#0f172a;border-color:var(--line)}body.dark .budget-model th{background:#273449;color:#e5edf8;border-color:#46556b}body.dark .budget-model td{border-color:#314054}body.dark .budget-group td{background:#21466f;color:#e5edf8}body.dark .budget-item td{background:#173522;color:#e5edf8}body.dark .budget-total td{background:#17324d;color:#e5edf8}
+    body.dark .calc-total{background:#0f172a;border-color:var(--line)}body.dark .calc-badge{background:#142b4a;color:#bfdbfe}
     body.dark th{background:#162033}body.dark td{border-bottom-color:#253247}
     body.dark .box,body.dark .official-card,body.dark .analytic-help .box,body.dark .empty{background:#0f172a;border-color:var(--line)}
     body.dark .logo-preview{background:#0f172a;border-color:var(--line)}
@@ -372,6 +374,14 @@
   <div class="btns"><button class="btn pri" onclick="saveBudget()">Salvar orçamento</button><button class="btn soft" onclick="viewCurrentBudget()">Visualizar</button><button class="btn blue" onclick="printCurrentBudget()">Imprimir</button><button class="btn soft" onclick="closeM('budgetModal')">Fechar</button><span class="autosave-status" id="budgetSaveStatus">Salvamento automático ativo</span></div>
 </div></div>
 
+<div class="modal-bg" id="memoryModal" style="z-index:90"><div class="modal" style="width:min(920px,96vw)">
+  <div class="modal-head"><div><h3>Editar memória de cálculo</h3><p class="muted small" id="memHelp">A memória calcula a quantidade do item selecionado.</p></div><button class="close" onclick="closeM('memoryModal')">×</button></div>
+  <div class="notice" id="memItemInfo"></div>
+  <div class="table calc-table"><table id="memTable"></table></div>
+  <div class="calc-total"><span class="muted small">Total da memória aplicado na quantidade do item</span><strong id="memTotal">0,0000</strong></div>
+  <div class="btns"><button class="btn soft" onclick="addMemoryLine()">Adicionar linha</button><button class="btn pri" onclick="saveBudgetMemory()">Salvar memória</button><button class="btn soft" onclick="closeM('memoryModal')">Cancelar</button></div>
+</div></div>
+
 <div class="modal-bg" id="budgetViewModal"><div class="modal">
   <div class="modal-head"><div><h3 id="budgetViewTitle">Visualizar orçamento</h3><p class="muted small">Consulta do orçamento no padrão da planilha.</p></div><button class="close" onclick="closeM('budgetViewModal')">×</button></div>
   <div class="budget-view" id="budgetViewBody"></div>
@@ -389,7 +399,7 @@
 <script>
 const KEY='composicoes_obras_sc_v1';
 const DB_NAME='orcc_store_v2',DB_STORE='state',DB_KEY='main';
-let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false;
+let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, memoryBudgetItem=-1, memoryRows=[], dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false;
 function emptyCompany(){return{name:'',doc:'',phone:'',email:'',address:'',notes:'',logo:''}}
 function base(){return{settings:{uf:'SC',fonte:'SINAPI',tipo:'Não desonerado',bdi:25,activeLibraryId:'',theme:'light',company:emptyCompany(),adminPassword:''},libraries:[],supplies:[],compositions:[],budgets:[]}}
 function mergeState(d){let b=base(),settings={...b.settings,...((d||{}).settings||{})};settings.company={...emptyCompany(),...(settings.company||{})};return {...b,...(d||{}),settings}}
@@ -1567,7 +1577,7 @@ function openBudget(x=''){budgetAutoReady=false;let b=state.budgets.find(a=>a.id
 function budgetFromComp(x){openBudget();selectBI(x);biQtd.value=1}
 function fillBI(){let c=state.compositions.find(a=>a.id===biComp.value);if(!c)return;biDesc.value=c.description;biUnit.value=c.unit;biCost.value=compCost(c).toFixed(4);biBdi.value=bBdi.value||state.settings.bdi}
 function applyBudgetDefaultBdi(){const v=n(bBdi.value);if(typeof biBdi!=='undefined')biBdi.value=bBdi.value||state.settings.bdi;(budgetItems||[]).forEach(it=>it.bdi=v);renderBI();scheduleBudgetAutosave()}
-function addBI(){let current=editingBudgetItem>=0?budgetItems[editingBudgetItem]:null,c=state.compositions.find(a=>a.id===biComp.value),it={id:current?.id||id('bi'),compositionId:c?.id||current?.compositionId||'',group:(biGroup.value||'Sem grupo').trim(),code:c?.code||current?.code||'',description:biDesc.value.trim(),unit:biUnit.value.trim(),quantity:n(biQtd.value),cost:n(biCost.value),bdi:n(bBdi.value||state.settings.bdi)};if(!it.description||it.quantity<=0){alert('Informe descrição e quantidade.');return}if(editingBudgetItem>=0){budgetItems[editingBudgetItem]=it}else{budgetItems.push(it)}clearBI();renderBI();scheduleBudgetAutosave()}
+function addBI(){let current=editingBudgetItem>=0?budgetItems[editingBudgetItem]:null,c=state.compositions.find(a=>a.id===biComp.value),it={id:current?.id||id('bi'),compositionId:c?.id||current?.compositionId||'',group:(biGroup.value||'Sem grupo').trim(),code:c?.code||current?.code||'',description:biDesc.value.trim(),unit:biUnit.value.trim(),quantity:n(biQtd.value),cost:n(biCost.value),bdi:n(bBdi.value||state.settings.bdi),memory:structuredClone(current?.memory||[])};if(!it.description||it.quantity<=0){alert('Informe descrição e quantidade.');return}if(editingBudgetItem>=0){budgetItems[editingBudgetItem]=it}else{budgetItems.push(it)}clearBI();renderBI();scheduleBudgetAutosave()}
 function editBI(k){let it=budgetItems[k];if(!it)return;editingBudgetItem=k;biGroup.value=it.group||'Sem grupo';biComp.value=it.compositionId||'';biCompSearch.value=it.code?`${it.code} - ${it.description}`:it.description;biDesc.value=it.description||'';biUnit.value=it.unit||'';biQtd.value=it.quantity||'';biCost.value=it.cost||'';biBdi.value=it.bdi??(bBdi.value||state.settings.bdi);if(typeof biAddBtn!=='undefined')biAddBtn.textContent='Salvar item'}
 function renderBudgetGroupOptions(){if(typeof budgetGroups==='undefined')return;let groups=[...new Set((budgetItems||[]).map(i=>(i.group||'Sem grupo').trim()).filter(Boolean))];budgetGroups.innerHTML=groups.map(g=>`<option value="${esc(g)}"></option>`).join('')}
 function clearBI(){let g=typeof biGroup!=='undefined'?biGroup.value:'';editingBudgetItem=-1;biComp.value='';if(typeof biCompSearch!=='undefined')biCompSearch.value='';if(typeof biSuggest!=='undefined')biSuggest.classList.remove('active');if(typeof biGroup!=='undefined')biGroup.value=g;biDesc.value='';biUnit.value='';biQtd.value='';biCost.value='';biBdi.value=bBdi.value||state.settings.bdi;if(typeof biAddBtn!=='undefined')biAddBtn.textContent='Adicionar item'}
@@ -1596,6 +1606,63 @@ function moveBI(k,dir){
  const item=budgetItems.splice(k,1)[0];budgetItems.splice(to,0,item);renderBI();scheduleBudgetAutosave();
 }
 function removeBI(k){budgetItems.splice(k,1);clearBI();renderBI();scheduleBudgetAutosave()}
+function budgetItemNumber(k){
+ for(const g of budgetEditGroups()){
+   const pos=g.rows.findIndex(r=>r.index===k);
+   if(pos>=0)return `${g.index}.${pos+1}`;
+ }
+ return String(k+1);
+}
+function calcFormulaValue(formula){
+ let s=String(formula||'').trim();
+ if(!s)return 0;
+ s=s.replace(/,/g,'.').replace(/[xX×]/g,'*').replace(/÷/g,'/');
+ if(!/^[0-9+\-*/().\s]+$/.test(s))return NaN;
+ try{const v=Function('"use strict";return ('+s+')')();return Number.isFinite(v)?v:NaN}catch(e){return NaN}
+}
+function memoryLineTotal(row){
+ const v=calcFormulaValue(row.formula);
+ if(!Number.isFinite(v))return NaN;
+ return row.op==='subtract'?-v:v;
+}
+function memoryTotal(rows=memoryRows){return rows.reduce((a,r)=>{const v=memoryLineTotal(r);return a+(Number.isFinite(v)?v:0)},0)}
+function openBudgetMemory(k){
+ const it=budgetItems[k];if(!it)return;
+ memoryBudgetItem=k;
+ memoryRows=structuredClone(Array.isArray(it.memory)?it.memory:[]);
+ if(!memoryRows.length)memoryRows=[{id:id('mem'),local:'',description:'',formula:fmt(n(it.quantity)||0,4),op:'add'}];
+ memItemInfo.innerHTML=`<b>${esc(budgetItemNumber(k))}</b> &nbsp; ${esc(it.code||'')} &nbsp; ${esc(it.description||'')} &nbsp; <b>${esc(it.unit||'')}</b> &nbsp; Quantidade atual: <b>${fmt(it.quantity,4)}</b>`;
+ renderMemoryRows();
+ openM('memoryModal');
+}
+function addMemoryLine(row={}){
+ memoryRows.push({id:id('mem'),local:row.local||'',description:row.description||'',formula:row.formula||'',op:row.op||'add'});
+ renderMemoryRows();
+}
+function updateMemoryLine(k,field,value){
+ if(!memoryRows[k])return;
+ memoryRows[k][field]=String(value??'');
+ renderMemoryRows();
+}
+function removeMemoryLine(k){memoryRows.splice(k,1);renderMemoryRows()}
+function renderMemoryRows(){
+ const body=memoryRows.length?memoryRows.map((r,k)=>{const total=memoryLineTotal(r),bad=r.formula&&!Number.isFinite(total);return `<tr><td><input value="${esc(r.local||'')}" placeholder="Local" onchange="updateMemoryLine(${k},'local',this.value)"></td><td><input value="${esc(r.description||'')}" placeholder="Descrição" onchange="updateMemoryLine(${k},'description',this.value)"></td><td><input value="${esc(r.formula||'')}" placeholder="Ex.: 3,20*2" onchange="updateMemoryLine(${k},'formula',this.value)"></td><td><select onchange="updateMemoryLine(${k},'op',this.value)"><option value="add"${r.op!=='subtract'?' selected':''}>Somar</option><option value="subtract"${r.op==='subtract'?' selected':''}>Subtrair</option></select></td><td class="right strong">${bad?'Erro':fmt(total,4)}</td><td><button class="icon-btn" title="Remover linha" onclick="removeMemoryLine(${k})">×</button></td></tr>`}).join(''):'<tr><td colspan="6" class="empty">Nenhuma linha de memória.</td></tr>';
+ memTable.innerHTML=`<thead><tr><th>Local</th><th>Descrição</th><th>Fórmula</th><th>Operação</th><th class="right">Total</th><th>Ações</th></tr></thead><tbody>${body}</tbody>`;
+ memTotal.textContent=fmt(memoryTotal(),4);
+}
+function saveBudgetMemory(){
+ const it=budgetItems[memoryBudgetItem];if(!it)return;
+ const invalid=memoryRows.some(r=>r.formula&&!Number.isFinite(memoryLineTotal(r)));
+ if(invalid){alert('Corrija as fórmulas inválidas antes de salvar. Use apenas números e operações + - * /.');return}
+ const rows=memoryRows.filter(r=>String(r.local||r.description||r.formula||'').trim());
+ const total=memoryTotal(rows);
+ if(total<0&&!confirm('O total da memória ficou negativo. Deseja aplicar mesmo assim?'))return;
+ it.memory=rows;
+ it.quantity=total;
+ closeM('memoryModal');
+ renderBI();
+ scheduleBudgetAutosave();
+}
 function renderBI(){
  renderBudgetGroupOptions();
  if(!budgetItems.length){
@@ -1604,7 +1671,7 @@ function renderBI(){
    const groups=budgetEditGroups();
    const body=groups.map((g,gi)=>{
      const head=`<tr class="sheet-group"><td class="center">${g.index}</td><td></td><td></td><td><input class="desc" value="${esc(g.name)}" onchange="updateBudgetGroup(${gi},this.value)" title="Editar grupo/etapa"></td><td></td><td class="right">1,00</td><td></td><td class="right strong">${br(g.total)}</td><td class="right strong">${br(g.total)}</td><td></td></tr>`;
-     const rows=g.rows.map((r,ri)=>{let i=r.it,k=r.index,t=bItem(i),unitBdi=n(i.cost)*(1+n(i.bdi)/100),hasComp=!!budgetCompositionFromItem(i),codeCell=hasComp?`<button class="code-link" title="Abrir composição de custo" onclick="openBudgetComposition(${k})">${esc(i.code||'')}</button>`:`<input class="code" value="${esc(i.code||'')}" onchange="updateBudgetItem(${k},'code',this.value)">`;return `<tr class="sheet-item"><td class="center">${g.index}.${ri+1}</td><td>${codeCell}</td><td><input class="base" value="${esc(budgetBank(i))}" readonly tabindex="-1"></td><td><input class="desc" value="${esc(i.description||'')}" onchange="updateBudgetItem(${k},'description',this.value)"></td><td><input class="unit" value="${esc(i.unit||'')}" onchange="updateBudgetItem(${k},'unit',this.value)"></td><td><input class="mini" value="${fmt(i.quantity,4)}" onchange="updateBudgetItem(${k},'quantity',this.value)"></td><td><input class="mini" value="${fmt(i.cost,4)}" onchange="updateBudgetItem(${k},'cost',this.value)"></td><td><input class="mini" value="${fmt(unitBdi,2)}" readonly tabindex="-1"></td><td class="right strong">${br(t.total)}</td><td><div class="row-tools"><button class="icon-btn" title="Subir item" onclick="moveBI(${k},-1)">↑</button><button class="icon-btn" title="Descer item" onclick="moveBI(${k},1)">↓</button><button class="icon-btn" title="Editar no formulário" onclick="editBI(${k})">✎</button><button class="icon-btn" title="Remover item" onclick="removeBI(${k})">×</button></div></td></tr>`}).join('');
+     const rows=g.rows.map((r,ri)=>{let i=r.it,k=r.index,t=bItem(i),unitBdi=n(i.cost)*(1+n(i.bdi)/100),hasComp=!!budgetCompositionFromItem(i),hasMem=Array.isArray(i.memory)&&i.memory.length,codeCell=hasComp?`<button class="code-link" title="Abrir composição de custo" onclick="openBudgetComposition(${k})">${esc(i.code||'')}</button>`:`<input class="code" value="${esc(i.code||'')}" onchange="updateBudgetItem(${k},'code',this.value)">`;return `<tr class="sheet-item"><td class="center">${g.index}.${ri+1}${hasMem?'<span class="calc-badge" title="Item com memória de cálculo">M</span>':''}</td><td>${codeCell}</td><td><input class="base" value="${esc(budgetBank(i))}" readonly tabindex="-1"></td><td><input class="desc" value="${esc(i.description||'')}" onchange="updateBudgetItem(${k},'description',this.value)"></td><td><input class="unit" value="${esc(i.unit||'')}" onchange="updateBudgetItem(${k},'unit',this.value)"></td><td><input class="mini" value="${fmt(i.quantity,4)}" onchange="updateBudgetItem(${k},'quantity',this.value)"></td><td><input class="mini" value="${fmt(i.cost,4)}" onchange="updateBudgetItem(${k},'cost',this.value)"></td><td><input class="mini" value="${fmt(unitBdi,2)}" readonly tabindex="-1"></td><td class="right strong">${br(t.total)}</td><td><div class="row-tools"><button class="icon-btn" title="Memória de cálculo" onclick="openBudgetMemory(${k})">▦</button><button class="icon-btn" title="Subir item" onclick="moveBI(${k},-1)">↑</button><button class="icon-btn" title="Descer item" onclick="moveBI(${k},1)">↓</button><button class="icon-btn" title="Editar no formulário" onclick="editBI(${k})">✎</button><button class="icon-btn" title="Remover item" onclick="removeBI(${k})">×</button></div></td></tr>`}).join('');
      return head+rows;
    }).join('');
    const total=budgetTotals(budgetItems).total;
@@ -1841,7 +1908,7 @@ function budgetTableStandard(b,forXls=false){
  const td=(v,cls='')=>`<td class="${cls}">${v}</td>`;
  const body=groups.map(g=>{
    const head=`<tr class="budget-group">${td(g.index,'center')}${td('')}${td('')}${td(esc(g.name),'strong')}${td('')}${td('1,00','right')}${td('')}${td(moneyCell(g.total),'right strong')}${td(moneyCell(g.total),'right strong')}</tr>`;
-   const items=g.items.map((it,k)=>{let x=bItem(it),unitBdi=n(it.cost)*(1+n(it.bdi)/100);return `<tr class="budget-item">${td(`${g.index}.${k+1}`,'center')}${td(esc(it.code||''))}${td(esc(budgetBank(it)))}${td(esc(it.description||''))}${td(esc(it.unit||''),'center')}${td(qtyCell(it.quantity),'right')}${td(moneyCell(it.cost),'right')}${td(moneyCell(unitBdi),'right')}${td(moneyCell(x.total),'right strong')}</tr>`}).join('');
+   const items=g.items.map((it,k)=>{let x=bItem(it),unitBdi=n(it.cost)*(1+n(it.bdi)/100),mem=Array.isArray(it.memory)&&it.memory.length?`<tr><td></td><td colspan="8"><b>Memória de cálculo</b><table style="width:100%;margin-top:6px"><thead><tr><th>Local</th><th>Descrição</th><th>Fórmula</th><th>Operação</th><th class="right">Total</th></tr></thead><tbody>${it.memory.map(r=>`<tr><td>${esc(r.local||'')}</td><td>${esc(r.description||'')}</td><td>${esc(r.formula||'')}</td><td>${r.op==='subtract'?'Subtrair':'Somar'}</td><td class="right">${qtyCell(memoryLineTotal(r))}</td></tr>`).join('')}<tr class="total"><td colspan="4">Total da memória</td><td class="right">${qtyCell(memoryTotal(it.memory))}</td></tr></tbody></table></td></tr>`:'';return `<tr class="budget-item">${td(`${g.index}.${k+1}`,'center')}${td(esc(it.code||''))}${td(esc(budgetBank(it)))}${td(esc(it.description||''))}${td(esc(it.unit||''),'center')}${td(qtyCell(it.quantity),'right')}${td(moneyCell(it.cost),'right')}${td(moneyCell(unitBdi),'right')}${td(moneyCell(x.total),'right strong')}</tr>${mem}`}).join('');
    return head+items;
  }).join('');
  return `<table class="budget-model"><colgroup><col style="width:62px"><col style="width:115px"><col style="width:105px"><col style="width:560px"><col style="width:65px"><col style="width:70px"><col style="width:90px"><col style="width:105px"><col style="width:105px"></colgroup><thead><tr><th>Item</th><th>Código</th><th>Base</th><th>Descrição</th><th>Und</th><th>Quant.</th><th>Valor Unit</th><th>Valor c/ BDI</th><th>Total</th></tr></thead><tbody>${body}<tr class="budget-total"><td colspan="8">TOTAL</td><td class="right strong">${moneyCell(total)}</td></tr></tbody></table>`;
@@ -1860,6 +1927,11 @@ function exportBudgetXls(id){
    g.items.forEach((it,k)=>{
      const x=bItem(it),unitBdi=n(it.cost)*(1+n(it.bdi)/100);
      rows.push([`${g.index}.${k+1}`,it.code||'',budgetBank(it),it.description||'',it.unit||'',n(it.quantity),n(it.cost),n(unitBdi),n(x.total)]);
+     if(Array.isArray(it.memory)&&it.memory.length){
+       rows.push(['','','','Memória de cálculo','','','','','']);
+       it.memory.forEach(r=>rows.push(['','','',r.local||'',r.description||'',r.formula||'',r.op==='subtract'?'Subtrair':'Somar',n(memoryLineTotal(r)),'']));
+       rows.push(['','','','Total da memória','','','',n(memoryTotal(it.memory)),'']);
+     }
    });
  });
  rows.push(['TOTAL','','','','','','','',n(budgetTotals(b.items||[]).total)]);
