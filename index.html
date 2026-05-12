@@ -276,7 +276,7 @@
     </section>
 
     <section id="bibliotecas" class="section"><div class="card"><div class="toolbar"><input class="search" id="libQ" oninput="render()" placeholder="Pesquisar biblioteca..."><div class="tool"><button class="btn pri" onclick="go('importar')">Importar base</button><button class="btn soft" id="migrateBlobsBtn" onclick="migrateLocalLibrariesToBlob()" style="display:none">Migrar para Blobs</button></div></div><div id="libList"></div></div></section>
-    <section id="composicoes" class="section"><div class="card"><div class="toolbar"><div class="tool"><input class="search" id="compQ" oninput="render()" placeholder="Pesquisar composição..."><select id="compSrc" onchange="render()"><option value="">Todas as fontes</option><option>SINAPI</option><option>SICRO</option><option>ORSE</option><option>SEINFRA</option><option>PROPRIA</option></select></div><button class="btn pri" onclick="openComp()">Nova composição</button></div><div id="compList"></div></div></section>
+    <section id="composicoes" class="section"><div class="card"><div class="toolbar"><div class="tool"><input class="search" id="compQ" oninput="render()" placeholder="Pesquisar composição..."><select id="compSrc" onchange="onCompSourceChange()"><option value="">Todas as fontes</option><option>SINAPI</option><option>SICRO</option><option>ORSE</option><option>SEINFRA</option><option>PROPRIA</option></select></div><button class="btn pri" onclick="openComp()">Nova composição</button></div><div id="compList"></div></div></section>
     <section id="insumos" class="section"><div class="card"><div class="toolbar"><input class="search" id="insQ" oninput="render()" placeholder="Pesquisar insumo..."><button class="btn pri" onclick="openSupply()">Novo insumo</button></div><div id="insList"></div></div></section>
     <section id="orcamentos" class="section"><div class="card"><div class="toolbar"><input class="search" id="orcQ" oninput="render()" placeholder="Pesquisar orçamento..."><div class="tool"><button class="btn pri" onclick="openBudget()">Novo orçamento</button><button class="btn soft" onclick="budgetImportFile.click()">Importar Excel/PDF</button><input type="file" id="budgetImportFile" accept=".xlsx,.xls,.csv,.pdf,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" style="display:none" onchange="importBudgetFile(this.files[0]);this.value=''"></div></div><div id="orcList"></div></div></section>
 
@@ -464,7 +464,7 @@ window.dispatchEvent(new CustomEvent('orcc-auth-ready'));
 <script>
 const KEY='composicoes_obras_sc_v1';
 const DB_NAME='orcc_store_v2',DB_STORE='state',DB_KEY='main';
-let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, memoryBudgetItem=-1, memoryRows=[], dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false, authUser=null, authReady=false, userSaveTimer=null, userCloudLoading=false, appAdminStatus={initialized:false,isAdmin:false,user:null};
+let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, memoryBudgetItem=-1, memoryRows=[], dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false, authUser=null, authReady=false, userSaveTimer=null, userCloudLoading=false, appAdminStatus={initialized:false,isAdmin:false,user:null}, blobSourceLoading=new Set();
 function emptyCompany(){return{name:'',doc:'',phone:'',email:'',address:'',notes:'',logo:''}}
 function base(){return{settings:{uf:'SC',fonte:'SINAPI',tipo:'Não desonerado',bdi:25,activeLibraryId:'',theme:'light',company:emptyCompany(),adminPassword:''},libraries:[],supplies:[],compositions:[],budgets:[]}}
 function mergeState(d){let b=base(),settings={...b.settings,...((d||{}).settings||{})};settings.company={...emptyCompany(),...(settings.company||{})};return {...b,...(d||{}),settings}}
@@ -750,6 +750,24 @@ async function loadBlobLibraryById(id){
  state.compositions=state.compositions.filter(c=>c.libraryId!==id).concat((data.base?.compositions||[]).map(c=>({...c,libraryId:id})));
  state.supplies=state.supplies.filter(s=>s.libraryId!==id).concat((data.base?.supplies||[]).map(s=>({...s,libraryId:id})));
  return data;
+}
+async function ensureBlobSourceLoaded(source){
+ const src=String(source||'').toUpperCase();
+ if(!src||src==='PROPRIA'||blobSourceLoading.has(src))return;
+ const libs=state.libraries.filter(l=>String(l.source||'').toUpperCase()===src&&l.storage==='blob');
+ const missing=libs.filter(l=>!state.compositions.some(c=>c.libraryId===l.id));
+ if(!missing.length)return;
+ blobSourceLoading.add(src);
+ try{
+  if(typeof compList!=='undefined'&&String(compSrc?.value||'').toUpperCase()===src)compList.innerHTML='<div class="empty">Carregando composições '+esc(src)+' dos Blobs...</div>';
+  for(const lib of missing)await loadBlobLibraryById(lib.id);
+  saveToDb().catch(()=>{});
+ }catch(e){
+  if(typeof compList!=='undefined')compList.innerHTML='<div class="notice warn">Não foi possível carregar '+esc(src)+' dos Blobs: '+esc(e?.message||e)+'</div>';
+ }finally{
+  blobSourceLoading.delete(src);
+  render();
+ }
 }
 async function loadActiveBlobLibrary(){if(state.settings.activeLibraryId&&isBlobLib(state.settings.activeLibraryId)){await loadBlobLibraryById(state.settings.activeLibraryId);render()}}
 async function activateLibrary(id){
@@ -1810,7 +1828,8 @@ function openSupply(x=''){let s=state.supplies.find(a=>a.id===x);supplyTitle.tex
 function saveSupply(){let x=supId.value||id('sup'),s={id:x,code:supCode.value.trim()||'INS-'+(state.supplies.length+1),description:supDesc.value.trim(),unit:supUnit.value.trim(),category:supCat.value,price:n(supPrice.value),source:supFonte.value.trim(),baseDate:supMes.value,note:supObs.value.trim()};if(!s.description){alert('Informe a descrição.');return}let i=state.supplies.findIndex(a=>a.id===x);i>=0?state.supplies[i]=s:state.supplies.push(s);closeM('supplyModal');save()}
 function delSupply(x){if(confirm('Excluir insumo?')){state.supplies=state.supplies.filter(s=>s.id!==x);save()}}
 
-function renderComps(){let q=(compQ?.value||'').toLowerCase(),src=compSrc?.value||'',list=state.compositions.filter(c=>(!src||c.source===src)&&JSON.stringify(c).toLowerCase().includes(q));compList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Código</th><th>Descrição</th><th>Un.</th><th>Fonte</th><th>UF</th><th>Mês</th><th class="right">Custo</th><th class="center">Itens</th><th>Ações</th></tr></thead><tbody>${list.map(c=>`<tr><td>${esc(c.code)}</td><td><b>${esc(c.description)}</b><br><span class="muted small">${esc(c.note||'')}</span></td><td>${esc(c.unit)}</td><td><span class="badge ${c.source==='PROPRIA'?'prop':'src'}">${esc(c.source)}</span></td><td><span class="badge sc">${esc(c.uf||'SC')}</span></td><td>${esc(c.baseDate||'')}</td><td class="right strong">${br(compCost(c))}</td><td class="center">${(c.items||[]).length}</td><td class="action-cell"><div class="action-stack"><button class="btn soft" onclick="openComp('${c.id}')">Ver</button><button class="btn ok" onclick="dupComp('${c.id}')">Duplicar</button><button class="btn blue" onclick="budgetFromComp('${c.id}')">Orçar</button><button class="btn soft" onclick="printComposition('${c.id}')">Imprimir</button><button class="btn danger" onclick="delComp('${c.id}')">Excluir</button></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma composição encontrada.</div>'}
+function onCompSourceChange(){renderComps();ensureBlobSourceLoaded(compSrc?.value||'')}
+function renderComps(){let q=(compQ?.value||'').toLowerCase(),src=compSrc?.value||'',srcUpper=String(src).toUpperCase(),list=state.compositions.filter(c=>(!src||String(c.source||'').toUpperCase()===srcUpper)&&JSON.stringify(c).toLowerCase().includes(q));if(src&&blobSourceLoading.has(srcUpper)&&!list.length){compList.innerHTML='<div class="empty">Carregando composições '+esc(srcUpper)+' dos Blobs...</div>';return}if(src&&!list.length&&state.libraries.some(l=>String(l.source||'').toUpperCase()===srcUpper&&l.storage==='blob'))ensureBlobSourceLoaded(src);compList.innerHTML=list.length?`<div class="table"><table><thead><tr><th>Código</th><th>Descrição</th><th>Un.</th><th>Fonte</th><th>UF</th><th>Mês</th><th class="right">Custo</th><th class="center">Itens</th><th>Ações</th></tr></thead><tbody>${list.map(c=>`<tr><td>${esc(c.code)}</td><td><b>${esc(c.description)}</b><br><span class="muted small">${esc(c.note||'')}</span></td><td>${esc(c.unit)}</td><td><span class="badge ${c.source==='PROPRIA'?'prop':'src'}">${esc(c.source)}</span></td><td><span class="badge sc">${esc(c.uf||'SC')}</span></td><td>${esc(c.baseDate||'')}</td><td class="right strong">${br(compCost(c))}</td><td class="center">${(c.items||[]).length}</td><td class="action-cell"><div class="action-stack"><button class="btn soft" onclick="openComp('${c.id}')">Ver</button><button class="btn ok" onclick="dupComp('${c.id}')">Duplicar</button><button class="btn blue" onclick="budgetFromComp('${c.id}')">Orçar</button><button class="btn soft" onclick="printComposition('${c.id}')">Imprimir</button><button class="btn danger" onclick="delComp('${c.id}')">Excluir</button></div></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma composição encontrada.</div>'}
 function fillSelects(){ciSup.innerHTML='<option value="">Selecione ou preencha manualmente</option>'+state.supplies.map(s=>`<option value="${s.id}">${esc(s.code)} - ${esc(s.description)}</option>`).join('')}
 function openComp(x=''){let c=state.compositions.find(a=>a.id===x),nested=typeof budgetModal!=='undefined'&&budgetModal.classList.contains('active');compModal.classList.toggle('nested-comp',nested);compTitle.textContent=c?'Editar composição':'Nova composição';compId.value=c?.id||'';cCode.value=c?.code||'';cDesc.value=c?.description||'';cUnit.value=c?.unit||'';cFonte.value=c?.source||'PROPRIA';cUf.value=c?.uf||state.settings.uf;cMes.value=c?.baseDate||new Date().toISOString().slice(0,7);cTipo.value=c?.type||'Próprio';cObs.value=c?.note||'';compItems=structuredClone(c?.items||[]);compBaseCost=n(c?.cost||0);clearCI();renderCI();openM('compModal')}
 function fillCI(){let s=state.supplies.find(a=>a.id===ciSup.value);if(!s)return;ciDesc.value=s.description;ciCat.value=s.category;ciUnit.value=s.unit;ciPrice.value=s.price}
