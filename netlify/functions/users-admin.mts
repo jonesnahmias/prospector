@@ -116,19 +116,32 @@ async function createAuthUserIfPassword(email: string, name: string, password: s
   if (password.length < 6) throw new Error("A senha inicial deve ter pelo menos 6 caracteres.");
   const key = `users/${safeId(email)}.json`;
   const existing = await authStore().get(key, { type: "json" }) as AuthUser | null;
-  if (existing) return true;
   const now = new Date().toISOString();
   const salt = randomBytes(16).toString("hex");
   const user: AuthUser = {
-    id: randomUUID(),
+    id: existing?.id || randomUUID(),
     email,
     name,
     salt,
     passwordHash: passwordHash(password, salt),
-    createdAt: now
+    createdAt: existing?.createdAt || now
   };
-  await authStore().setJSON(key, user, { metadata: { userId: user.id, email, createdAt: now } });
+  await authStore().setJSON(key, user, { metadata: { userId: user.id, email, createdAt: user.createdAt, updatedAt: now } });
   return true;
+}
+
+async function deleteManagedUser(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const authKey = `users/${safeId(normalizedEmail)}.json`;
+  const authUser = await authStore().get(authKey, { type: "json" }) as AuthUser | null;
+  if (authUser?.id) await userStore().delete(`users/${safeId(authUser.id)}.json`);
+  await userStore().delete(`pending/${safeId(normalizedEmail)}.json`);
+  await authStore().delete(authKey);
+  const sessionList = await authStore().list({ prefix: "sessions/" });
+  for (const blob of sessionList.blobs || []) {
+    const session = await authStore().get(blob.key, { type: "json" }) as { email?: string } | null;
+    if (session?.email?.toLowerCase() === normalizedEmail) await authStore().delete(blob.key);
+  }
 }
 
 export default async (req: Request) => {
@@ -194,6 +207,16 @@ export default async (req: Request) => {
 
     if (payload.action === "list-users") {
       return json({ ok: true, users: config.managed || [] });
+    }
+
+    if (payload.action === "delete-user") {
+      const email = String(payload.email || "").trim().toLowerCase();
+      if (!email || !email.includes("@")) return json({ ok: false, mensagem: "Informe o e-mail do usuario." }, 400);
+      const authUser = await getCurrentUser(req);
+      if (authUser?.email?.toLowerCase() === email) return json({ ok: false, mensagem: "O gestor logado nao pode excluir a propria conta." }, 400);
+      await deleteManagedUser(email);
+      await writeAdminConfig({ ...config, managed: (config.managed || []).filter(u => u.email.toLowerCase() !== email) });
+      return json({ ok: true });
     }
 
     return json({ ok: false, mensagem: "Acao invalida." }, 400);

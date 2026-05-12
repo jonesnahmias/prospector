@@ -354,7 +354,7 @@
     <div class="span4"><label>Nome, para novo cadastro</label><input id="authName" autocomplete="name" placeholder="Opcional"></div>
   </div>
   <div class="notice" id="authMsg" style="display:none;margin-top:14px"></div>
-  <div class="btns"><button class="btn pri" onclick="loginUser()">Entrar</button><button class="btn soft" onclick="signupUser()">Criar conta de gestor</button><button class="btn soft" id="authCancelBtn" onclick="closeM('authModal')">Cancelar</button></div>
+  <div class="btns"><button class="btn pri" onclick="loginUser()">Entrar</button><button class="btn soft" id="authSignupBtn" onclick="signupUser()">Criar conta do gestor inicial</button><button class="btn soft" id="authCancelBtn" onclick="closeM('authModal')">Cancelar</button></div>
 </div></div>
 
 <div class="modal-bg" id="supplyModal"><div class="modal">
@@ -557,6 +557,7 @@ function updateAuthGate(){
  document.body.classList.toggle('auth-required',locked);
  if(locked&&typeof authModal!=='undefined')authModal.classList.add('active');
  if(!locked&&typeof authModal!=='undefined')authModal.classList.remove('active');
+ if(typeof authSignupBtn!=='undefined')authSignupBtn.style.display=appAdminStatus.initialized?'none':'inline-block';
 }
 async function adminApi(action,payload={}){
  const token=authToken();
@@ -621,10 +622,19 @@ async function createManagedUser(){
   await loadManagedUsers();
  }catch(e){alert('Não foi possível criar o usuário.\n\nDetalhe: '+(e?.message||e))}
 }
+async function deleteManagedUser(email){
+ if(!email)return;
+ if(!confirm('Excluir este usuário/empresa?\n\n'+email+'\n\nIsso remove o login, sessões e dados privados deste usuário. As bases globais permanecem.'))return;
+ try{
+  await adminApi('delete-user',{email});
+  await loadManagedUsers();
+  alert('Usuário excluído: '+email);
+ }catch(e){alert('Não foi possível excluir o usuário.\n\nDetalhe: '+(e?.message||e))}
+}
 async function loadManagedUsers(){
  try{
   const data=await adminApi('list-users');
-  managedUsersList.innerHTML=(data.users||[]).length?`<div class="table"><table><thead><tr><th>E-mail</th><th>Empresa</th><th>Perfil</th><th>Dados iniciais</th><th>Acesso</th></tr></thead><tbody>${data.users.map(u=>`<tr><td>${esc(u.email||'')}</td><td>${esc(u.name||'')}</td><td>${esc((u.roles&&u.roles[0])||u.role||'user')}</td><td>${u.seeded?'Copiados':'Limpo'}</td><td>${u.passwordReady?'Senha inicial definida':'Pendente'}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma empresa cadastrada.</div>';
+  managedUsersList.innerHTML=(data.users||[]).length?`<div class="table"><table><thead><tr><th>E-mail</th><th>Empresa</th><th>Perfil</th><th>Dados iniciais</th><th>Acesso</th><th>Ações</th></tr></thead><tbody>${data.users.map(u=>{const email=String(u.email||'');const jsEmail=JSON.stringify(email).replace(/"/g,'&quot;');return `<tr><td>${esc(email)}</td><td>${esc(u.name||'')}</td><td>${esc((u.roles&&u.roles[0])||u.role||'user')}</td><td>${u.seeded?'Copiados':'Limpo'}</td><td>${u.passwordReady?'Senha inicial definida':'Pendente'}</td><td><button class="btn danger" onclick="deleteManagedUser(${jsEmail})">Excluir</button></td></tr>`}).join('')}</tbody></table></div>`:'<div class="empty">Nenhuma empresa cadastrada.</div>';
  }catch(e){managedUsersList.innerHTML='<div class="notice warn">Não foi possível listar usuários: '+esc(e?.message||e)+'</div>'}
 }
 function openAuth(){authMsg.style.display='none';openM('authModal');setTimeout(()=>authEmail.focus(),80)}

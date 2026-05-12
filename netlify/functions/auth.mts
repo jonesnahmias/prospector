@@ -2,6 +2,8 @@ import { getStore } from "@netlify/blobs";
 import { createHash, pbkdf2Sync, randomBytes, randomUUID } from "node:crypto";
 
 const AUTH_STORE = "orcc-auth";
+const ADMIN_STORE = "orcc-admin";
+const ADMIN_KEY = "config.json";
 
 type AuthUser = {
   id: string;
@@ -27,6 +29,10 @@ function safeId(value: string) {
 
 function store() {
   return getStore({ name: AUTH_STORE, consistency: "strong" });
+}
+
+function adminStore() {
+  return getStore({ name: ADMIN_STORE, consistency: "strong" });
 }
 
 function passwordHash(password: string, salt: string) {
@@ -78,6 +84,8 @@ export default async (req: Request) => {
       const password = String(payload.password || "");
       const name = String(payload.name || "").trim() || email;
       if (!email.includes("@") || password.length < 6) return json({ ok: false, mensagem: "Informe e-mail valido e senha com pelo menos 6 caracteres." }, 400);
+      const adminConfig = await adminStore().get(ADMIN_KEY, { type: "json" }) as { admins?: string[] } | null;
+      if ((adminConfig?.admins || []).length) return json({ ok: false, mensagem: "Conta criada somente pelo gestor. Use o e-mail e a senha fornecidos." }, 403);
       const key = `users/${safeId(email)}.json`;
       const existing = await store().get(key, { type: "json" });
       if (existing) return json({ ok: false, mensagem: "Conta ja existe. Use Entrar." }, 409);
