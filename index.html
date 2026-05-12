@@ -399,7 +399,7 @@
   </div>
   <h3>Itens do orçamento</h3>
   <div class="form">
-    <div class="span2"><label>Base para pesquisar composições</label><select id="bLib" onchange="clearBI();scheduleBudgetAutosave()"></select></div>
+    <div class="span2"><label>Base para pesquisar composições</label><select id="bLib" onchange="onBudgetLibraryChange()"></select></div>
     <div class="span2"><label>Filtro da base</label><input id="bLibInfo" readonly></div>
     <div class="span2"><label>Grupo/Etapa</label><input id="biGroup" list="budgetGroups" placeholder="Ex.: Administração"><datalist id="budgetGroups"></datalist></div>
     <div class="span2 suggest-wrap"><label>Composição</label><input id="biCompSearch" placeholder="Digite código ou descrição..." oninput="searchBI()" onfocus="searchBI()" onkeydown="keyBI(event)"><input type="hidden" id="biComp"><div class="suggest-list" id="biSuggest"></div></div><div><label>Quantidade</label><input type="number" step="0.0001" id="biQtd"></div><div><label>BDI (%)</label><input type="number" step="0.01" id="biBdi" readonly title="Espelha o BDI da obra"></div>
@@ -464,7 +464,7 @@ window.dispatchEvent(new CustomEvent('orcc-auth-ready'));
 <script>
 const KEY='composicoes_obras_sc_v1';
 const DB_NAME='orcc_store_v2',DB_STORE='state',DB_KEY='main';
-let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, memoryBudgetItem=-1, memoryRows=[], dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false, authUser=null, authReady=false, userSaveTimer=null, userCloudLoading=false, appAdminStatus={initialized:false,isAdmin:false,user:null}, blobSourceLoading=new Set();
+let state=load(), buffer=null, compItems=[], budgetItems=[], compBaseCost=0, editingBudgetItem=-1, memoryBudgetItem=-1, memoryRows=[], dbReady=false, adminUnlocked=false, adminTarget='importar', budgetAutosaveTimer=null, budgetAutoReady=false, authUser=null, authReady=false, userSaveTimer=null, userCloudLoading=false, appAdminStatus={initialized:false,isAdmin:false,user:null}, blobSourceLoading=new Set(), blobLibraryLoading=new Set();
 function emptyCompany(){return{name:'',doc:'',phone:'',email:'',address:'',notes:'',logo:''}}
 function base(){return{settings:{uf:'SC',fonte:'SINAPI',tipo:'Não desonerado',bdi:25,activeLibraryId:'',theme:'light',company:emptyCompany(),adminPassword:''},libraries:[],supplies:[],compositions:[],budgets:[]}}
 function mergeState(d){let b=base(),settings={...b.settings,...((d||{}).settings||{})};settings.company={...emptyCompany(),...(settings.company||{})};return {...b,...(d||{}),settings}}
@@ -750,6 +750,18 @@ async function loadBlobLibraryById(id){
  state.compositions=state.compositions.filter(c=>c.libraryId!==id).concat((data.base?.compositions||[]).map(c=>({...c,libraryId:id})));
  state.supplies=state.supplies.filter(s=>s.libraryId!==id).concat((data.base?.supplies||[]).map(s=>({...s,libraryId:id})));
  return data;
+}
+async function ensureBlobLibraryLoaded(id,{renderAfter=true}={}){
+ if(!id||!isBlobLib(id)||state.compositions.some(c=>c.libraryId===id)||blobLibraryLoading.has(id))return false;
+ blobLibraryLoading.add(id);
+ try{
+  await loadBlobLibraryById(id);
+  saveToDb().catch(()=>{});
+  return true;
+ }finally{
+  blobLibraryLoading.delete(id);
+  if(renderAfter)render();
+ }
 }
 async function ensureBlobSourceLoaded(source){
  const src=String(source||'').toUpperCase();
@@ -1856,9 +1868,29 @@ function updateBudgetLibraryInfo(){
  const l=state.libraries.find(x=>x.id===bLib.value);
  bLibInfo.value=l?`${l.source||''} ${l.uf||''} ${l.baseDate||''} ${l.type||''}`.trim():'Pesquisa em todas as bases';
 }
-function budgetCompositions(){const lid=typeof bLib!=='undefined'?bLib.value:'';return state.compositions.filter(c=>!lid||c.libraryId===lid)}
-function searchBI(){
+async function onBudgetLibraryChange(){
+ clearBI();
  updateBudgetLibraryInfo();
+ const id=bLib.value;
+ if(id&&isBlobLib(id)&&!state.compositions.some(c=>c.libraryId===id)){
+  biSuggest.innerHTML='<div class="suggest-item"><span>Carregando base selecionada...</span></div>';
+  biSuggest.classList.add('active');
+  try{await ensureBlobLibraryLoaded(id,{renderAfter:false})}
+  catch(e){biSuggest.innerHTML='<div class="suggest-item"><span>Não foi possível carregar a base: '+esc(e?.message||e)+'</span></div>';return}
+  biSuggest.classList.remove('active');
+ }
+ scheduleBudgetAutosave();
+}
+function budgetCompositions(){const lid=typeof bLib!=='undefined'?bLib.value:'';return state.compositions.filter(c=>!lid||c.libraryId===lid)}
+async function searchBI(){
+ updateBudgetLibraryInfo();
+ const lid=typeof bLib!=='undefined'?bLib.value:'';
+ if(lid&&isBlobLib(lid)&&!state.compositions.some(c=>c.libraryId===lid)){
+  biSuggest.innerHTML='<div class="suggest-item"><span>Carregando base selecionada...</span></div>';
+  biSuggest.classList.add('active');
+  try{await ensureBlobLibraryLoaded(lid,{renderAfter:false})}
+  catch(e){biSuggest.innerHTML='<div class="suggest-item"><span>Não foi possível carregar a base: '+esc(e?.message||e)+'</span></div>';return}
+ }
  const term=norm(biCompSearch.value),words=term.split('_').filter(Boolean);
  const list=budgetCompositions().filter(c=>{const hay=norm((c.code||'')+' '+(c.description||'')+' '+(c.source||''));return words.every(w=>hay.includes(w))}).slice(0,25);
  biSuggest.innerHTML=list.length?list.map(c=>`<div class="suggest-item" onclick="selectBI('${c.id}')"><b>${esc(c.code)} - ${esc(c.description)}</b><span>${br(compCost(c))}/${esc(c.unit)} • ${esc(c.source||'')}</span></div>`).join(''):'<div class="suggest-item"><span>Nenhuma composição encontrada.</span></div>';
