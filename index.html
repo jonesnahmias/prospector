@@ -656,6 +656,9 @@ async function signupUser(){
  try{
   authMessage('Criando conta...');
   authUser=await window.orccAuth.signup(authEmail.value.trim(),authPass.value,{full_name:authName.value.trim()});
+  if(!appAdminStatus.initialized){
+   await adminApi('bootstrap-admin',{name:authUser.name||authUser.email||'Gestor ORCC'});
+  }
   closeM('authModal');
   updateAuthGate();
   renderAuthCard();
