@@ -906,7 +906,7 @@ function clearAdminPassword(){if(confirm('Remover a senha da área administrativ
 function go(s){
  if((s==='importar'||s==='bibliotecas')&&!adminUnlocked){requestAdminAccess(s);return}
  document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.getElementById(s).classList.add('active');document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.s===s));let t={home:['Página inicial','Ambiente de orçamento com composições, insumos e relatórios.'],importar:['Importar base','Configuração de bases oficiais ou próprias em CSV/XLSX.'],bibliotecas:['Bases cadastradas','Bibliotecas importadas por fonte, UF, mês-base e tipo.'],composicoes:['Composições','Composições sintéticas e analíticas para orçamento.'],insumos:['Insumos','Materiais, mão de obra, equipamentos e serviços.'],orcamentos:['Orçamentos','Monte orçamentos com composições, quantidade e BDI.'],config:['Configurações','Empresa, logotipo e padrões do app.'],backup:['Backup e saídas','Exportação, impressão e restauração de dados.']}[s];title.textContent=t[0];subtitle.textContent=t[1]}
-document.querySelectorAll('.nav').forEach(b=>b.onclick=()=>go(b.dataset.s));
+document.querySelectorAll('.nav[data-s]').forEach(b=>b.onclick=()=>go(b.dataset.s));
 
 function setImportMode(mode){
   const isUpload = mode === 'upload';
